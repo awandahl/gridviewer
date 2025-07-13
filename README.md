@@ -2,7 +2,7 @@
 
 ## What GridViewer Can Do
 
-**GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. Here’s what you can do with GridViewer:
+**GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. **GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (my case) or Raspberry Pi. Here’s what you can do with GridViewer:
 
 ### Key Features
 
