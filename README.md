@@ -124,7 +124,12 @@ http://localhost:8000/gridviewer.html
 - The tool should load and display your worked grids.    
   
 ## Notes
-
+- A BAT-file to get GridViewer up and running that has been successful on Windows:
+```
+@echo off
+python -c "__import__('subprocess').Popen(['python', '-m', 'http.server', '8000'], creationflags=0, close_fds=True)" 
+start chrome --new-window "http://localhost:8000/gridviewer.html"
+```
 - You may use any port (e.g., 8000); just match the port in your browser address.
 - If your log file updates, simply refresh the browser page.
 - No installation is necessary beyond a basic Python or Node.js environment.
