@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<!--
+gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
+Relies on code initially made by N1KDO https://www.n1kdo.com https://github.com/n1kdo/lotw-gridmapper with the following license:
+
+BSD 2-Clause License
+
+Copyright (c) 2017, 2018 Jeffrey B. Otterson, N1KDO
+Copyright (c) 2025 Anders Wändahl, SM0HPL
+
+Portions generated or adapted with the help of Perplexity AI (perplexity.ai), based on instructions and ideas from Anders Wändahl, SM0HPL.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Contributions:
+- Original grid mapping logic and portions of UI by Jeffrey B. Otterson, N1KDO (https://github.com/n1kdo/lotw-gridmapper)
+- Major enhancements, new features, and integration by Anders Wändahl, SM0HPL
+- Feature design and code assistance by Perplexity AI, based on instructions and ideas from Anders Wändahl, SM0HPL
+
+-->
+<html>
+<head>
+    <title>Worked Grids by Band, Mode, and Year</title>
+    <meta name="viewport" content="width=device-width, initial-scale=0.75">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        body {
+            margin: 0;
+            border: 0;
+            font-family: sans-serif;
+        }
+        .header {
+            height: 4vh;
+            font-size: 4vh;
+            text-align: center;
+        }
+        #band-filters, #mode-filters, #year-filters {
+            text-align: center;
+            margin: 1em;
+        }
+        #map {
+            width: 100vw;
+            height: 90vh;
+            margin: auto;
+        }
+        .footerLeft {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 2vh;
+            font-size: 2vh;
+        }
+        .footerMid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            height: 2vh;
+            font-size: 2vh;
+        }
+        .footerRight {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            text-align: right;
+            height: 2vh;
+            font-size: 2vh;
+        }
+        .leaflet-label {
+            font-weight: bold;
+            color: #000;
+            background: rgba(255,255,255,0.7);
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            display: inline-block;
+            white-space: nowrap;
+            min-width: 0;
+            box-sizing: border-box;
+            text-align: center;
+            pointer-events: auto;
+        }
+    </style>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+    <div id="header" class="header">
+        Grids Worked by Band, Mode, and Year
+    </div>
+    <div id="band-filters"></div>
+    <div id="mode-filters"></div>
+    <div id="year-filters"></div>
+    <div id="map"></div>
+    <div id="footerLeft" class="footerLeft"></div>
+    <div id="footerMid" class="footerMid">
+        <a href="https://github.com/awandahl/gridmapper">GitHub</a>
+    </div>
+    <div id="footerRight" class="footerRight"></div>
+    <script>
+        let allQsos = [];
+        let map = null;
+        let gridLayers = {};
+        let gridToCallsigns = {};
+
+        // Internal band names for logic (must match ADIF, so lowercase)
+        const allBands = [
+            "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m",
+            "6m", "4m", "2m", "1.25m", "70cm", "33cm", "23cm"
+        ];
+        // Display labels (with capital M)
+        const allBandsDisplay = allBands.map(band => band.replace('cm', 'CM').replace('m', 'M'));
+
+        // Internal mode names for logic (must match ADIF, so uppercase)
+        const allModes = ["FT4", "FT8", "SSB", "CW", "FM", "AM", "RTTY"];
+
+        // Years for filtering
+        const minYear = 2010;
+        const maxYear = new Date().getFullYear() + 1; // allow next year for future logs
+        const allYears = [];
+        for (let y = minYear; y <= maxYear; y++) allYears.push(y);
+
+        function gridToCoordinates(gridSquare) {
+            gridSquare = gridSquare.toLowerCase();
+            const a = "a".charCodeAt(0);
+            const zero = "0".charCodeAt(0);
+            let lon = (gridSquare.charCodeAt(0) - a) * 20.0;
+            let lat = (gridSquare.charCodeAt(1) - a) * 10.0;
+            lon += (gridSquare.charCodeAt(2) - zero) * 2.0;
+            lat += (gridSquare.charCodeAt(3) - zero);
+            lon = lon - 180;
+            lat = lat - 90;
+            return { lat: lat, lng: lon };
+        }
+
+        function addSquare(map, gridSquare, callsignYears) {
+            let coords = gridToCoordinates(gridSquare);
+            let lat = coords['lat'];
+            let lon = coords['lng'];
+            let bounds = [
+                [lat, lon],
+                [lat + 1, lon + 2]
+            ];
+
+            let rect = L.rectangle(bounds, {
+                color: "#ff0000",
+                weight: 1,
+                fillColor: "#ff0000",
+                fillOpacity: 0.25
+            }).addTo(map);
+
+            let labelLat = lat + 0.5;
+            let labelLon = lon + 1;
+            let marker = L.marker([labelLat, labelLon], {
+                icon: L.divIcon({
+                    className: 'leaflet-label',
+                    html: gridSquare.toUpperCase(),
+                    iconSize: [40, 20],
+                    iconAnchor: [20, 10]
+                }),
+                interactive: true
+            }).addTo(map);
+
+            // Tooltip content with years per callsign
+            let tooltipContent = `<b>${gridSquare.toUpperCase()}</b><br>Stations:<br>`;
+            let calls = Object.keys(callsignYears);
+            if (calls.length > 0) {
+                tooltipContent += calls
+                    .sort()
+                    .map(call => {
+                        let yearsArr = Array.from(callsignYears[call]).sort();
+                        return `${call} (${yearsArr.join(', ')})`;
+                    })
+                    .join('<br>');
+            } else {
+                tooltipContent += 'None';
+            }
+
+            rect.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
+            marker.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
+
+            return [rect, marker];
+        }
+
+        function drawMap() {
+            if (map !== null) {
+                map.remove();
+            }
+            map = L.map('map').setView([54.5, 15.5], 4);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            gridLayers = {};
+        }
+
+        function parse_adif_line(line) {
+            // Parse all <field:value> pairs in the line
+            let fields = {};
+            let regex = /<([^:>]+)(?::\d+)?>((?:.|\n)*?)(?=<|$)/g;
+            let match;
+            while ((match = regex.exec(line)) !== null) {
+                fields[match[1].toLowerCase()] = match[2].trim();
+            }
+            // For mode and submode, always store as uppercase for logic
+            if (fields['mode']) fields['mode'] = fields['mode'].toUpperCase().trim();
+            if (fields['submode']) fields['submode'] = fields['submode'].toUpperCase().trim();
+            if (fields['call']) fields['call'] = fields['call'].toUpperCase().trim();
+            return fields;
+        }
+
+        function processAdiLines(text) {
+            let lines = text.split("\n");
+            allQsos = [];
+            gridToCallsigns = {};
+            let bandsFound = new Set();
+            let modesFound = new Set();
+            let yearsFound = new Set();
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (line.length === 0) continue;
+                let qso = parse_adif_line(line);
+                if (qso['band']) bandsFound.add(qso['band'].toLowerCase());
+                if (qso['submode'] && qso['submode'] === 'FT4') {
+                    modesFound.add('FT4');
+                } else if (qso['mode']) {
+                    modesFound.add(qso['mode'].toUpperCase());
+                }
+                // Extract year from qso_date
+                let year = '';
+                if (qso['qso_date'] && qso['qso_date'].length >= 4) {
+                    year = qso['qso_date'].substr(0, 4);
+                    yearsFound.add(year);
+                }
+                // Build grid-to-callsigns mapping with years
+                if (qso['gridsquare'] && qso['gridsquare'].length >= 4 && qso['call']) {
+                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
+                    let call = qso['call'].toUpperCase();
+                    if (!gridToCallsigns[grid]) gridToCallsigns[grid] = {};
+                    if (!gridToCallsigns[grid][call]) gridToCallsigns[grid][call] = new Set();
+                    if (year) gridToCallsigns[grid][call].add(year);
+                }
+                allQsos.push(qso);
+            }
+            generateBandCheckboxes(bandsFound);
+            generateModeCheckboxes(modesFound);
+            generateYearCheckboxes(yearsFound);
+            updateMap();
+        }
+
+        // --- Select All / Reset Checkboxes ---
+
+        function generateBandCheckboxes(bandsFound) {
+            const container = document.getElementById('band-filters');
+            container.innerHTML = '';
+            container.innerHTML += `<label><input type="checkbox" id="selectAllBands">Select All Bands</label> `;
+            container.innerHTML += `<label><input type="checkbox" id="resetBands">Reset Bands</label> `;
+
+            allBands.forEach((band, i) => {
+                let checked = (band === '6m') ? 'checked' : '';
+                container.innerHTML += `<label><input type="checkbox" class="band-checkbox" value="${band}" ${checked}>${allBandsDisplay[i]}</label> `;
+            });
+
+            document.getElementById('selectAllBands').addEventListener('change', function () {
+                let checked = this.checked;
+                document.querySelectorAll('.band-checkbox').forEach(cb => cb.checked = checked);
+                updateMap();
+            });
+            document.getElementById('resetBands').addEventListener('change', function () {
+                if (this.checked) {
+                    document.querySelectorAll('.band-checkbox').forEach(cb => cb.checked = (cb.value === '6m'));
+                    document.getElementById('selectAllBands').checked = false;
+                    this.checked = false;
+                    updateMap();
+                }
+            });
+
+            Array.from(document.querySelectorAll('.band-checkbox')).forEach(cb => {
+                cb.addEventListener('change', function () {
+                    if (!this.checked) {
+                        document.getElementById('selectAllBands').checked = false;
+                    } else {
+                        let allChecked = Array.from(document.querySelectorAll('.band-checkbox')).every(cb => cb.checked);
+                        document.getElementById('selectAllBands').checked = allChecked;
+                    }
+                    updateMap();
+                });
+            });
+        }
+
+        function generateModeCheckboxes(modesFound) {
+            const container = document.getElementById('mode-filters');
+            container.innerHTML = '';
+            container.innerHTML += `<label><input type="checkbox" id="selectAllModes">Select All Modes</label> `;
+            container.innerHTML += `<label><input type="checkbox" id="resetModes">Reset Modes</label> `;
+
+            allModes.forEach(mode => {
+                let checked = (mode === 'FT8') ? 'checked' : '';
+                container.innerHTML += `<label><input type="checkbox" class="mode-checkbox" value="${mode}" ${checked}>${mode}</label> `;
+            });
+
+            document.getElementById('selectAllModes').addEventListener('change', function () {
+                let checked = this.checked;
+                document.querySelectorAll('.mode-checkbox').forEach(cb => cb.checked = checked);
+                updateMap();
+            });
+            document.getElementById('resetModes').addEventListener('change', function () {
+                if (this.checked) {
+                    document.querySelectorAll('.mode-checkbox').forEach(cb => cb.checked = (cb.value === 'FT8'));
+                    document.getElementById('selectAllModes').checked = false;
+                    this.checked = false;
+                    updateMap();
+                }
+            });
+
+            Array.from(document.querySelectorAll('.mode-checkbox')).forEach(cb => {
+                cb.addEventListener('change', function () {
+                    if (!this.checked) {
+                        document.getElementById('selectAllModes').checked = false;
+                    } else {
+                        let allChecked = Array.from(document.querySelectorAll('.mode-checkbox')).every(cb => cb.checked);
+                        document.getElementById('selectAllModes').checked = allChecked;
+                    }
+                    updateMap();
+                });
+            });
+        }
+
+        function generateYearCheckboxes(yearsFound) {
+            const container = document.getElementById('year-filters');
+            container.innerHTML = '';
+            container.innerHTML += `<label><input type="checkbox" id="selectAllYears">All Years</label> `;
+            container.innerHTML += `<label><input type="checkbox" id="resetYears">Reset Years</label> `;
+
+            // Use all years from minYear to maxYear, but only check those present in yearsFound by default
+            allYears.forEach(year => {
+                let checked = yearsFound.has(String(year)) ? 'checked' : '';
+                container.innerHTML += `<label><input type="checkbox" class="year-checkbox" value="${year}" ${checked}>${year}</label> `;
+            });
+
+            document.getElementById('selectAllYears').addEventListener('change', function () {
+                let checked = this.checked;
+                document.querySelectorAll('.year-checkbox').forEach(cb => cb.checked = checked);
+                updateMap();
+            });
+            document.getElementById('resetYears').addEventListener('change', function () {
+                if (this.checked) {
+                    // Reset: check only latest year present in yearsFound
+                    let latestYear = Math.max(...Array.from(yearsFound).map(y => parseInt(y)));
+                    document.querySelectorAll('.year-checkbox').forEach(cb => cb.checked = (parseInt(cb.value) === latestYear));
+                    document.getElementById('selectAllYears').checked = false;
+                    this.checked = false;
+                    updateMap();
+                }
+            });
+
+            Array.from(document.querySelectorAll('.year-checkbox')).forEach(cb => {
+                cb.addEventListener('change', function () {
+                    if (!this.checked) {
+                        document.getElementById('selectAllYears').checked = false;
+                    } else {
+                        let allChecked = Array.from(document.querySelectorAll('.year-checkbox')).every(cb => cb.checked);
+                        document.getElementById('selectAllYears').checked = allChecked;
+                    }
+                    updateMap();
+                });
+            });
+        }
+
+        function getSelectedBands() {
+            return Array.from(document.querySelectorAll('.band-checkbox:checked')).map(cb => cb.value);
+        }
+
+        function getSelectedModes() {
+            return Array.from(document.querySelectorAll('.mode-checkbox:checked')).map(cb => cb.value.toUpperCase());
+        }
+
+        function getSelectedYears() {
+            return Array.from(document.querySelectorAll('.year-checkbox:checked')).map(cb => cb.value);
+        }
+
+        function qsoMatchesSelectedModes(qso, selectedModes) {
+            // FT4: mode must be MFSK and submode FT4
+            if (selectedModes.includes('FT4')) {
+                if (qso['mode'] === 'MFSK' && qso['submode'] === 'FT4') return true;
+            }
+            // FT8: mode must be FT8 (no submode)
+            if (selectedModes.includes('FT8')) {
+                if (qso['mode'] === 'FT8') return true;
+            }
+            // Other modes: match by mode only, ignore submode
+            for (let mode of selectedModes) {
+                if (mode !== 'FT8' && mode !== 'FT4' && qso['mode'] === mode) return true;
+            }
+            return false;
+        }
+
+        function updateMap() {
+            drawMap();
+            let selectedBands = getSelectedBands();
+            let selectedModes = getSelectedModes();
+            let selectedYears = getSelectedYears();
+            let grids = new Set();
+            let gridToFilteredCallsigns = {};
+            for (let qso of allQsos) {
+                let year = '';
+                if (qso['qso_date'] && qso['qso_date'].length >= 4) {
+                    year = qso['qso_date'].substr(0, 4);
+                }
+                if (
+                    qso['band'] &&
+                    selectedBands.includes(qso['band'].toLowerCase()) &&
+                    qsoMatchesSelectedModes(qso, selectedModes) &&
+                    selectedYears.includes(year) &&
+                    qso['gridsquare'] && qso['gridsquare'].length >= 4 &&
+                    qso['call']
+                ) {
+                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
+                    let call = qso['call'].toUpperCase();
+                    grids.add(grid);
+                    if (!gridToFilteredCallsigns[grid]) gridToFilteredCallsigns[grid] = {};
+                    if (!gridToFilteredCallsigns[grid][call]) gridToFilteredCallsigns[grid][call] = new Set();
+                    if (year) gridToFilteredCallsigns[grid][call].add(year);
+                }
+            }
+            for (let grid of grids) {
+                let callsignYears = gridToFilteredCallsigns[grid] || {};
+                addSquare(map, grid, callsignYears);
+            }
+            // Display selected bands, modes, and years in header
+            let selectedBandLabels = selectedBands.map(band => {
+                let idx = allBands.indexOf(band);
+                return idx !== -1 ? allBandsDisplay[idx] : band;
+            });
+            let selectedYearLabels = selectedYears.join(', ');
+            document.getElementById("header").innerHTML = `${grids.size} Grids Worked`;
+        }
+
+        // On page load, automatically load the ADI file and display the map
+        window.onload = function () {
+            // Initial load
+            fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+                .then(response => response.text())
+                .then(function (text) {
+                    processAdiLines(text);
+                });
+
+            // Reload the ADI file every 30 minutes
+            setInterval(function () {
+                fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+                    .then(response => response.text())
+                    .then(function (text) {
+                        processAdiLines(text);
+                    });
+            }, 1800000); // 1800000 ms = 30 minutes
+        };
+    </script>
+</body>
+</html>
