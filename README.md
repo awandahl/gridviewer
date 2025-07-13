@@ -15,7 +15,7 @@ Below are step-by-step instructions for running **GridViewer** on both Linux and
 #### **Linux**
 
 - Place `wsjtx_log.adi` in the same directory as `gridviewer.html`.
-- Or, if your log is elsewhere, create a symbolic link:
+- Or, if your log is elsewhere, create a symbolic link (recommended):
 
 ```bash
 ln -s /path/to/your/wsjtx_log.adi /path/to/gridviewer/wsjtx_log.adi
