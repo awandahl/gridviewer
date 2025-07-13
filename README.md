@@ -53,6 +53,7 @@
 - **Simple Setup:** Just serve the HTML file and your log—no complex configuration or dependencies.
 - **Responsive:** Allows you to run WSJT-X and GridViewer together even on modest hardware.
 
+
   Good luck!
   Anders SM0HPL
 
