@@ -61,63 +61,59 @@ Contributions:
             width: 100vw;
             height: 90vh;
             margin: auto;
+            margin-bottom: 2.5vh; /* or adjust as needed */
         }
-       .footerLeft, .footerMid, .footerRight {
-    position: fixed;
-    bottom: 0;
-    height: 5vh;
-    font-size: 2vh;
-    background: rgba(255,255,255,0.9); /* Optional: makes footer readable over map */
-    z-index: 1000;
-    width: 33.33%;
-    box-sizing: border-box;
-    padding: 0 10px;
-}
-.footerLeft {
-    left: 0;
-    text-align: left;
-}
-.footerMid {
-    position: fixed;
-    bottom: 0;
-    left: 33.33%;
-    width: 33.33%;
-    height: 5vh; /* or your desired height */
-    display: flex;
-    align-items: center;      /* vertical centering */
-    justify-content: center;  /* horizontal centering */
-    text-align: center;
-    background: rgba(255,255,255,0.9);
-    z-index: 1000;
-    font-size: 3vh;
-    box-sizing: border-box;
-    padding: 0 10px;
-}
-
-.footerMid a {
-    color: #c00;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 0.5em;           /* Smaller text */
-    padding: 4px 12px;        /* Smaller button */
-    border-radius: 12px;
-    background: #fff3f3;
-    border: 2px solid #c00;
-    transition: background 0.2s, color 0.2s;
-    box-shadow: 0 2px 8px rgba(200,0,0,0.08);
-}
-
-.footerMid a:hover, .footerMid a:focus {
-    color: #fff;
-    background: #c00;
-    text-decoration: none;
-    border-color: #a00;
-}
-
-.footerRight {
-    right: 0;
-    text-align: right;
-}
+        .footerLeft, .footerMid, .footerRight {
+            position: fixed;
+            bottom: 0;
+            height: 5vh;
+            font-size: 2vh;
+            background: rgba(255,255,255,0.9);
+            z-index: 1000;
+            width: 33.33%;
+            box-sizing: border-box;
+            padding: 0 10px;
+        }
+        .footerLeft {
+            left: 0;
+            text-align: left;
+        }
+        .footerMid {
+            left: 33.33%;
+            width: 33.33%;
+            height: 5vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: rgba(255,255,255,0.9);
+            z-index: 1000;
+            font-size: 3vh;
+            box-sizing: border-box;
+            padding: 0 10px;
+        }
+        .footerMid a {
+            color: #c00;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 0.5em;
+            padding: 4px 12px;
+            border-radius: 12px;
+            background: #fff3f3;
+            border: 2px solid #c00;
+            transition: background 0.2s, color 0.2s;
+            box-shadow: 0 2px 8px rgba(200,0,0,0.08);
+        }
+        .footerMid a:hover, .footerMid a:focus {
+            color: #fff;
+            background: #c00;
+            text-decoration: none;
+            border-color: #a00;
+        }
+        .footerRight {
+            right: 0;
+            text-align: right;
+        }
         .leaflet-label {
             font-weight: bold;
             color: #000;
@@ -133,35 +129,29 @@ Contributions:
             text-align: center;
             pointer-events: auto;
         }
-      #map {
-    width: 100vw;
-    height: 90vh;
-    margin: auto;
-    margin-bottom: 2.5vh; /* or adjust as needed */
-}
     </style>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
-  <div id="logo-container" style="text-align:center; margin-top:32px;">
-      <!-- Logo image with fallback red text will be inserted here -->
-      <img 
-        src="https://github.com/awandahl/gridviewer/blob/main/gridviewer.jpg?raw=true"
-        alt="GridViewer Logo"
-        style="max-width:425px; height:70px; display:inline-block; vertical-align:middle;"
-        onerror="
-          this.style.display='none';
-          var msg=document.createElement('div');
-          msg.textContent='GridViewer';
-          msg.style.color='red';
-          msg.style.fontSize='48px';
-          msg.style.fontWeight='bold';
-          msg.style.height='60px';
-          msg.style.display='inline-block';
-          msg.style.verticalAlign='middle';
-          this.parentNode.appendChild(msg);
-        "
-      >
+    <div id="logo-container" style="text-align:center; margin-top:32px;">
+        <!-- Logo image with fallback red text will be inserted here -->
+        <img 
+            src="https://github.com/awandahl/gridviewer/blob/main/gridviewer.jpg?raw=true"
+            alt="GridViewer Logo"
+            style="max-width:425px; height:70px; display:inline-block; vertical-align:middle;"
+            onerror="
+                this.style.display='none';
+                var msg=document.createElement('div');
+                msg.textContent='GridViewer';
+                msg.style.color='red';
+                msg.style.fontSize='48px';
+                msg.style.fontWeight='bold';
+                msg.style.height='60px';
+                msg.style.display='inline-block';
+                msg.style.verticalAlign='middle';
+                this.parentNode.appendChild(msg);
+            "
+        >
     </div>
     <div id="header" class="header">
         Grids Worked by Band, Mode, and Year
