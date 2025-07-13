@@ -55,7 +55,7 @@ python -m SimpleHTTPServer 8000
 ```
 
 
-#### **Using Node.js (Linux or Windows)** Not tested by me, but should hopefully work!
+#### **Using Node.js (Linux or Windows)** *Not tested by me, but should hopefully work!*
 
 - Install [http-server](https://www.npmjs.com/package/http-server) globally (if not already):
 
