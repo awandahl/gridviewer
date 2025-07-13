@@ -62,30 +62,29 @@ Contributions:
             height: 90vh;
             margin: auto;
         }
-        .footerLeft {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            height: 2vh;
-            font-size: 2vh;
-        }
-        .footerMid {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            text-align: center;
-            height: 2vh;
-            font-size: 2vh;
-        }
-        .footerRight {
-            position: absolute;
-            right: 0;
-            bottom: 0;
-            text-align: right;
-            height: 2vh;
-            font-size: 2vh;
-        }
+       .footerLeft, .footerMid, .footerRight {
+    position: fixed;
+    bottom: 0;
+    height: 2vh;
+    font-size: 2vh;
+    background: rgba(255,255,255,0.9); /* Optional: makes footer readable over map */
+    z-index: 1000;
+    width: 33.33%;
+    box-sizing: border-box;
+    padding: 0 10px;
+}
+.footerLeft {
+    left: 0;
+    text-align: left;
+}
+.footerMid {
+    left: 33.33%;
+    text-align: center;
+}
+.footerRight {
+    right: 0;
+    text-align: right;
+}
         .leaflet-label {
             font-weight: bold;
             color: #000;
