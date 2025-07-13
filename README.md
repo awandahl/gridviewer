@@ -35,4 +35,22 @@
 - Clean, responsive design that works well on desktops, tablets, and mobile devices.
 - All controls are accessible and hopefully intuitive, with clear labels and logical grouping.
 
+## Why GridViewer Was Created
+
+**GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (my case) or Raspberry Pi:
+
+- **Resource Efficiency:** Popular programs like GridTracker, while feature-rich and beloved by many, are quite large (around 200MB) and can be resource-intensive. On low-power devices, running both WSJT-X and GridTracker simultaneously can overwhelm the system, resulting in sluggish performance or even making it impossible to operate both at once.
+- **Lightweight Alternative:** GridViewer was designed to be a minimal, efficient, browser-based solution for visualizing worked grid squares. It requires only a web browser, a small HTML file, and your log file—making it ideal for systems with limited CPU and memory.
+- **Practical Motivation:** The need for a tool that could run smoothly alongside WSJT-X on a device like the Rock 4 SE was the direct inspiration for GridViewer. By focusing on essential features and avoiding heavy dependencies, GridViewer enables real-time grid mapping without taxing the system.
+
+
+### Key Advantages of GridViewer
+
+- **Tiny Footprint:** Runs in any modern browser, no installation or large packages required.
+- **Low CPU Usage:** Minimal background processing, making it suitable for low-power hardware.
+- **Simple Setup:** Just serve the HTML file and your log—no complex configuration or dependencies.
+- **Responsive:** Allows you to run WSJT-X and GridViewer together even on modest hardware.
+
+  Good luck!
+  Anders SM0HPL
 
