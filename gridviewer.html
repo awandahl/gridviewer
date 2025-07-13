@@ -78,9 +78,42 @@ Contributions:
     text-align: left;
 }
 .footerMid {
+    position: fixed;
+    bottom: 0;
     left: 33.33%;
+    width: 33.33%;
+    height: 5vh; /* or your desired height */
+    display: flex;
+    align-items: center;      /* vertical centering */
+    justify-content: center;  /* horizontal centering */
     text-align: center;
+    background: rgba(255,255,255,0.9);
+    z-index: 1000;
+    font-size: 3vh;
+    box-sizing: border-box;
+    padding: 0 10px;
 }
+
+.footerMid a {
+    color: #c00;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 0.5em;           /* Smaller text */
+    padding: 4px 12px;        /* Smaller button */
+    border-radius: 12px;
+    background: #fff3f3;
+    border: 2px solid #c00;
+    transition: background 0.2s, color 0.2s;
+    box-shadow: 0 2px 8px rgba(200,0,0,0.08);
+}
+
+.footerMid a:hover, .footerMid a:focus {
+    color: #fff;
+    background: #c00;
+    text-decoration: none;
+    border-color: #a00;
+}
+
 .footerRight {
     right: 0;
     text-align: right;
