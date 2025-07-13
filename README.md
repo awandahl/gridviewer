@@ -124,7 +124,7 @@ http://localhost:8000/gridviewer.html
 - The tool should load and display your worked grids.    
   
 ## Notes
-- A BAT-file to get GridViewer up and running that has been successful on Windows:
+- A BAT-file to get GridViewer up and running in one go that has been successful on Windows:
 ```
 @echo off
 python -c "__import__('subprocess').Popen(['python', '-m', 'http.server', '8000'], creationflags=0, close_fds=True)" 
