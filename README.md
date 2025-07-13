@@ -1,5 +1,4 @@
-<img src="https://github.com/user-attachments/assets/276c1bc4-2384-4db7-a174-d0d07c90d47b" alt="gridviewer_screenshots" width="800">
-![GridViewer Logo](gridviewer.jpg)
+<img src="https://github.com/user-attachments/assets/276c1bc4-2384-4db7-a174-d0d07c90d47b" alt="gridviewer_screenshots" width="1000">
 
 
 ## How to Use GridViewer on Linux and Windows
