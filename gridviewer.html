@@ -105,6 +105,26 @@ Contributions:
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
+  <div id="logo-container" style="text-align:center;">
+      <!-- Logo image with fallback red text will be inserted here -->
+      <img 
+        src="https://github.com/awandahl/gridviewer/blob/main/gridviewer.jpg?raw=true"
+        alt="GridViewer Logo"
+        style="max-width:200px; height:60px; display:inline-block; vertical-align:middle;"
+        onerror="
+          this.style.display='none';
+          var msg=document.createElement('div');
+          msg.textContent='GridViewer';
+          msg.style.color='red';
+          msg.style.fontSize='48px';
+          msg.style.fontWeight='bold';
+          msg.style.height='60px';
+          msg.style.display='inline-block';
+          msg.style.verticalAlign='middle';
+          this.parentNode.appendChild(msg);
+        "
+      >
+    </div>
     <div id="header" class="header">
         Grids Worked by Band, Mode, and Year
     </div>
