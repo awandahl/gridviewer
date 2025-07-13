@@ -121,19 +121,8 @@ http-server -p 8000
 http://localhost:8000/gridviewer.html
 ```
 
-- The tool should load and display your worked grids.
-
-
-## Quick Reference Table
-
-| Step | Linux Command/Action | Windows Command/Action |
-| :-- | :-- | :-- |
-| Place files | Put both files in same directory | Same |
-| Symlink log file | `ln -s /path/to/wsjtx_log.adi ./wsjtx_log.adi` | `mklink` (see above) |
-| Start server (Python) | `python3 -m http.server 8000` | `python -m http.server 8000` |
-| Start server (Node) | `http-server -p 8000` | `http-server -p 8000` |
-| Open in browser | `http://localhost:8000/gridviewer.html` | Same |
-
+- The tool should load and display your worked grids.    
+  
 ## Notes
 
 - You may use any port (e.g., 8000); just match the port in your browser address.
