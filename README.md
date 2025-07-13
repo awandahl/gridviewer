@@ -1,4 +1,3 @@
-![gridviewer](https://github.com/user-attachments/assets/7608478f-992a-45c9-9c9d-0fd4b1a2dd04)
 ![GridViewer Logo](gridviewer.jpg)
 
 ## How to Use GridViewer on Linux and Windows
