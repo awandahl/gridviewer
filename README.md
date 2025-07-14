@@ -2,7 +2,7 @@
 
 ## What GridViewer Can Do
 
-**GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. **GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (my case) or Raspberry Pi.    
+**GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. **GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (in my case) or Raspberry Pi.    
 
 [**Installation Instructions**](https://github.com/awandahl/gridviewer/blob/main/Installation.md)
 
@@ -39,7 +39,7 @@
 
 ## Why GridViewer Was Created
 
-**GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (my case) or Raspberry Pi:
+**GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (in my case) or Raspberry Pi:
 
 - **Resource Efficiency:** Popular programs like GridTracker, while feature-rich and beloved by many, are quite large (around 200MB) and can be resource-intensive. On low-power devices, running both WSJT-X and GridTracker simultaneously can overwhelm the system, resulting in sluggish performance or even making it impossible to operate both at once.
 - **Lightweight Alternative:** GridViewer was designed to be a minimal, efficient, browser-based solution for visualizing worked grid squares. It requires only a web browser, a small HTML file, and your log file—making it ideal for systems with limited CPU and memory.
