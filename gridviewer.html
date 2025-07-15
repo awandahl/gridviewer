@@ -135,7 +135,7 @@ Contributions:
 <body>
     <div id="logo-container" style="text-align:center; margin-top:32px;">
         <!-- Logo image with fallback red text will be inserted here -->
-        <img 
+        <img
             src="https://github.com/awandahl/gridviewer/blob/main/gridviewer.jpg?raw=true"
             alt="GridViewer Logo"
             style="max-width:425px; height:70px; display:inline-block; vertical-align:middle;"
@@ -164,7 +164,36 @@ Contributions:
     <div id="footerMid" class="footerMid">
         <a href="https://github.com/awandahl/gridviewer">SM0HPL GitHub</a>
     </div>
-    <div id="footerRight" class="footerRight"></div>
+    <div id="footerRight" class="footerRight">
+        <label for="call-search"
+               style="font-weight:bold; font-size:1.5vh; margin-right:6px;">
+            Search Call:
+        </label>
+        <input
+            type="text"
+            id="call-search"
+            placeholder="Enter callsign..."
+            style="font-size:1.5vh; padding:2px 6px; width:140px;"
+        >
+    </div>
+    <div
+        id="callsign-results"
+        style="
+            display: none;
+            position: fixed;
+            right: 10px;
+            bottom: 6vh;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 10px;
+            font-size: 1.6vh;
+            min-width: 250px;
+            max-width: 320px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 2000;
+        "
+    ></div>
     <script>
         let allQsos = [];
         let map = null;
@@ -522,6 +551,94 @@ Contributions:
                     });
             }, 1800000); // 1800000 ms = 30 minutes
         };
+
+        // Helper: Find all QSOs with the current filters and a callsign match
+        function searchQsosByCallsign(callInput) {
+            const search = callInput.trim().toUpperCase();
+            if (!search) return [];
+            const bands = getSelectedBands();
+            const modes = getSelectedModes();
+            const years = getSelectedYears();
+            return allQsos.filter(qso =>
+                qso['call'] && qso['call'].toUpperCase().includes(search) &&
+                qso['band'] && bands.includes(qso['band'].toLowerCase()) &&
+                qsoMatchesSelectedModes(qso, modes) &&
+                qso['qso_date'] && years.includes(qso['qso_date'].substr(0, 4))
+            );
+        }
+
+        // Helper: Zoom map to grid
+        function focusOnGrid(gridSquare) {
+            let coords = gridToCoordinates(gridSquare);
+            // Set the map view so the grid is centered and zoom in
+            map.setView([coords.lat + 0.5, coords.lng + 1], 8, { animate: true });
+        }
+
+        // Handle search box events
+        document.getElementById('call-search').addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') doCallsignSearch();
+        });
+        document.getElementById('call-search').addEventListener('blur', function (e) {
+            // If someone clicks out of the box with text, do search
+            if (this.value.trim() !== "") doCallsignSearch();
+        });
+
+        function doCallsignSearch() {
+            const callInput = document.getElementById('call-search').value;
+            const results = searchQsosByCallsign(callInput);
+            const box = document.getElementById('callsign-results');
+            box.innerHTML = '';
+            if (!callInput.trim()) {
+                box.style.display = 'none';
+                return;
+            }
+            if (results.length === 0) {
+                box.innerHTML = `<b>No QSOs found for callsign.</b>`;
+                box.style.display = 'block';
+                return;
+            }
+
+            // Gather unique grids worked and display details
+            const grids = [...new Set(results.map(qso =>
+                qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : null
+            ).filter(Boolean))];
+
+            let html = `<b>${callInput.trim().toUpperCase()}</b> found in <b>${results.length}</b> contact(s):<hr>`;
+            html += `<table style="width:100%; font-size:1.6vh;">
+                        <tr>
+                            <th>Band</th>
+                            <th>Mode</th>
+                            <th>Date</th>
+                            <th>Grid</th>
+                        </tr>`;
+            results.sort((a, b) => (b['qso_date'] || '').localeCompare(a['qso_date'] || ''));
+            results.forEach(qso => {
+                // Format date: YYYYMMDD[hhmmss] → YYYY-MM-DD [UTC]
+                let d = '';
+                if (qso['qso_date']) {
+                    d = qso['qso_date'].substr(0, 4) + '-' +
+                        qso['qso_date'].substr(4, 2) + '-' +
+                        qso['qso_date'].substr(6, 2);
+                    if (qso['time_on'] && qso['time_on'].length >= 4) {
+                        d += ' ' + qso['time_on'].substr(0, 2) + ':' +
+                            qso['time_on'].substr(2, 2) + ' UTC';
+                    }
+                }
+                html += `<tr>
+                            <td>${qso['band'] ? qso['band'].toUpperCase() : ''}</td>
+                            <td>${qso['submode'] === 'FT4' ? 'FT4' : (qso['mode'] || '')}</td>
+                            <td>${d}</td>
+                            <td>${qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : ''}</td>
+                        </tr>`;
+            });
+            html += '</table>';
+
+            box.innerHTML = html;
+            box.style.display = 'block';
+
+            // Zoom to first grid found
+            if (grids.length > 0) focusOnGrid(grids[0]);
+        }
     </script>
 </body>
 </html>
