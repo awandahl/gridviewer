@@ -53,7 +53,7 @@ Contributions:
         }
         .header {
             height: 4vh;
-            font-size: 4vh;
+            font-size: 3vh;
             text-align: center;
         }
         #band-filters, #mode-filters, #year-filters {
@@ -64,7 +64,7 @@ Contributions:
             width: 100vw;
             height: 90vh;
             margin: auto;
-            margin-bottom: 2.5vh; /* or adjust as needed */
+            margin-bottom: 2.5vh;
         }
         .footerLeft, .footerMid, .footerRight {
             position: fixed;
@@ -132,12 +132,34 @@ Contributions:
             text-align: center;
             pointer-events: auto;
         }
+        .legend-gridcolor {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            vertical-align: middle;
+            background: #ff0000;
+            opacity: 0.25;
+            border: 1px solid #888;
+            margin-right: 5px;
+        }
+        .legend-gridcolor.confirmed {
+            background: #00b300;
+        }
+        .summary {
+            margin: 8px;
+            font-size: 1.8vh;
+            text-align: center;
+        }
+        .legend {
+            margin: 8px;
+            font-size: 1.7vh;
+            text-align: center;
+        }
     </style>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
 <body>
     <div id="logo-container" style="text-align:center; margin-top:32px;">
-        <!-- Logo image with fallback red text will be inserted here -->
         <img
             src="https://github.com/awandahl/gridviewer/blob/main/gridviewer.jpg?raw=true"
             alt="GridViewer Logo"
@@ -159,6 +181,8 @@ Contributions:
     <div id="header" class="header">
         Grids Worked by Band, Mode, and Year
     </div>
+    <div id="legend" class="legend"></div>
+    <div id="summary" class="summary"></div>
     <div id="band-filters"></div>
     <div id="mode-filters"></div>
     <div id="year-filters"></div>
@@ -169,7 +193,7 @@ Contributions:
     </div>
     <div id="footerRight" class="footerRight">
         <label for="call-search"
-               style="font-weight:bold; font-size:1.5vh; margin-right:6px;">
+                style="font-weight:bold; font-size:1.5vh; margin-right:6px;">
             Search Call:
         </label>
         <input
@@ -199,6 +223,8 @@ Contributions:
     ></div>
     <script>
         let allQsos = [];
+        let confirmedQsos = [];
+        let confirmedGrids = new Set();
         let map = null;
         let gridLayers = {};
         let gridToCallsigns = {};
@@ -214,9 +240,8 @@ Contributions:
         // Internal mode names for logic (must match ADIF, so uppercase)
         const allModes = ["FT4", "FT8", "SSB", "CW", "FM", "AM", "RTTY"];
 
-        // Years for filtering
         const minYear = 2015;
-        const maxYear = new Date().getFullYear() + 1; // allow next year for future logs
+        const maxYear = new Date().getFullYear() + 1;
         const allYears = [];
         for (let y = minYear; y <= maxYear; y++) allYears.push(y);
 
@@ -233,7 +258,7 @@ Contributions:
             return { lat: lat, lng: lon };
         }
 
-        function addSquare(map, gridSquare, callsignYears) {
+        function addSquare(map, gridSquare, callsignYears, isConfirmed) {
             let coords = gridToCoordinates(gridSquare);
             let lat = coords['lat'];
             let lon = coords['lng'];
@@ -242,10 +267,11 @@ Contributions:
                 [lat + 1, lon + 2]
             ];
 
+            let fillColor = isConfirmed ? "#00b300" : "#ff0000";
             let rect = L.rectangle(bounds, {
-                color: "#ff0000",
+                color: fillColor,
                 weight: 1,
-                fillColor: "#ff0000",
+                fillColor: fillColor,
                 fillOpacity: 0.25
             }).addTo(map);
 
@@ -262,7 +288,11 @@ Contributions:
             }).addTo(map);
 
             // Tooltip content with years per callsign
-            let tooltipContent = `<b>${gridSquare.toUpperCase()}</b><br>Stations:<br>`;
+            let tooltipContent = `<b>${gridSquare.toUpperCase()}</b>`;
+            if (isConfirmed) {
+                tooltipContent += `<br><span style="color:#00b300;font-weight:bold;">&#10003; Confirmed (LoTW)</span>`;
+            }
+            tooltipContent += `<br>Stations:<br>`;
             let calls = Object.keys(callsignYears);
             if (calls.length > 0) {
                 tooltipContent += calls
@@ -295,14 +325,12 @@ Contributions:
         }
 
         function parse_adif_line(line) {
-            // Parse all <field:value> pairs in the line
             let fields = {};
             let regex = /<([^:>]+)(?::\d+)?>((?:.|\n)*?)(?=<|$)/g;
             let match;
             while ((match = regex.exec(line)) !== null) {
                 fields[match[1].toLowerCase()] = match[2].trim();
             }
-            // For mode and submode, always store as uppercase for logic
             if (fields['mode']) fields['mode'] = fields['mode'].toUpperCase().trim();
             if (fields['submode']) fields['submode'] = fields['submode'].toUpperCase().trim();
             if (fields['call']) fields['call'] = fields['call'].toUpperCase().trim();
@@ -326,13 +354,11 @@ Contributions:
                 } else if (qso['mode']) {
                     modesFound.add(qso['mode'].toUpperCase());
                 }
-                // Extract year from qso_date
                 let year = '';
                 if (qso['qso_date'] && qso['qso_date'].length >= 4) {
                     year = qso['qso_date'].substr(0, 4);
                     yearsFound.add(year);
                 }
-                // Build grid-to-callsigns mapping with years
                 if (qso['gridsquare'] && qso['gridsquare'].length >= 4 && qso['call']) {
                     let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
                     let call = qso['call'].toUpperCase();
@@ -346,6 +372,22 @@ Contributions:
             generateModeCheckboxes(modesFound);
             generateYearCheckboxes(yearsFound);
             updateMap();
+        }
+
+        function processConfirmedAdi(text) {
+            let lines = text.split("\n");
+            confirmedQsos = [];
+            confirmedGrids = new Set();
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+                if (line.length === 0) continue;
+                let qso = parse_adif_line(line);
+                if (qso['gridsquare'] && qso['gridsquare'].length >= 4) {
+                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
+                    confirmedGrids.add(grid);
+                }
+                confirmedQsos.push(qso);
+            }
         }
 
         // --- Select All / Reset Checkboxes ---
@@ -432,7 +474,6 @@ Contributions:
             container.innerHTML += `<label><input type="checkbox" id="selectAllYears">All Years</label> `;
             container.innerHTML += `<label><input type="checkbox" id="resetYears">Reset Years</label> `;
 
-            // Use all years from minYear to maxYear, but only check those present in yearsFound by default
             allYears.forEach(year => {
                 let checked = yearsFound.has(String(year)) ? 'checked' : '';
                 container.innerHTML += `<label><input type="checkbox" class="year-checkbox" value="${year}" ${checked}>${year}</label> `;
@@ -445,7 +486,6 @@ Contributions:
             });
             document.getElementById('resetYears').addEventListener('change', function () {
                 if (this.checked) {
-                    // Reset: check only latest year present in yearsFound
                     let latestYear = Math.max(...Array.from(yearsFound).map(y => parseInt(y)));
                     document.querySelectorAll('.year-checkbox').forEach(cb => cb.checked = (parseInt(cb.value) === latestYear));
                     document.getElementById('selectAllYears').checked = false;
@@ -480,15 +520,12 @@ Contributions:
         }
 
         function qsoMatchesSelectedModes(qso, selectedModes) {
-            // FT4: mode must be MFSK and submode FT4
             if (selectedModes.includes('FT4')) {
                 if (qso['mode'] === 'MFSK' && qso['submode'] === 'FT4') return true;
             }
-            // FT8: mode must be FT8 (no submode)
             if (selectedModes.includes('FT8')) {
                 if (qso['mode'] === 'FT8') return true;
             }
-            // Other modes: match by mode only, ignore submode
             for (let mode of selectedModes) {
                 if (mode !== 'FT8' && mode !== 'FT4' && qso['mode'] === mode) return true;
             }
@@ -502,6 +539,8 @@ Contributions:
             let selectedYears = getSelectedYears();
             let grids = new Set();
             let gridToFilteredCallsigns = {};
+            let confirmedFilteredGrids = new Set();
+
             for (let qso of allQsos) {
                 let year = '';
                 if (qso['qso_date'] && qso['qso_date'].length >= 4) {
@@ -523,39 +562,65 @@ Contributions:
                     if (year) gridToFilteredCallsigns[grid][call].add(year);
                 }
             }
+
+            // Find confirmed grids for these selections
+            for (const grid of grids) {
+                if (confirmedGrids.has(grid)) confirmedFilteredGrids.add(grid);
+            }
+
+            // Draw all grid squares with their confirmed status
             for (let grid of grids) {
                 let callsignYears = gridToFilteredCallsigns[grid] || {};
-                addSquare(map, grid, callsignYears);
+                let isConf = confirmedFilteredGrids.has(grid);
+                addSquare(map, grid, callsignYears, isConf);
             }
-            // Display selected bands, modes, and years in header
-            let selectedBandLabels = selectedBands.map(band => {
-                let idx = allBands.indexOf(band);
-                return idx !== -1 ? allBandsDisplay[idx] : band;
-            });
-            let selectedYearLabels = selectedYears.join(', ');
-            document.getElementById("header").innerHTML = `${grids.size} Grids Worked`;
+
+            // Update legend and summary
+            let legend = `
+                <span class="legend-gridcolor"></span>Worked&nbsp;&nbsp;
+                <span class="legend-gridcolor confirmed"></span>Confirmed by LoTW
+            `;
+            document.getElementById('legend').innerHTML = legend;
+
+            document.getElementById("header").innerHTML =
+                `${grids.size} Grids Worked`;
+            document.getElementById("summary").innerHTML =
+                `Confirmed grids: <b>${confirmedFilteredGrids.size}</b> of <b>${grids.size}</b> (${grids.size > 0 ? Math.round((confirmedFilteredGrids.size / grids.size) * 100) : 0}%)`;
         }
 
-        // On page load, automatically load the ADI file and display the map
+        // --- File processing and page Boot ---
+
         window.onload = function () {
-            // Initial load
-            fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+            // Load confirmed grids first (needs to be present in same folder or configurable)
+            fetch('lotwreport.adi?nocache=' + new Date().getTime())
                 .then(response => response.text())
-                .then(function (text) {
-                    processAdiLines(text);
+                .then(function (conftext) {
+                    processConfirmedAdi(conftext);
+                    // Then main log
+                    fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+                        .then(response => response.text())
+                        .then(function (text) {
+                            processAdiLines(text);
+                        });
                 });
 
-            // Reload the ADI file every 30 minutes
+            // Reload both files every 30 minutes
             setInterval(function () {
-                fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+                fetch('lotwreport.adi?nocache=' + new Date().getTime())
                     .then(response => response.text())
-                    .then(function (text) {
-                        processAdiLines(text);
+                    .then(function (conftext) {
+                        processConfirmedAdi(conftext);
+                        fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+                            .then(response => response.text())
+                            .then(function (text) {
+                                processAdiLines(text);
+                            });
                     });
-            }, 1800000); // 1800000 ms = 30 minutes
+            }, 1800000);
         };
 
-        // Helper: Find all QSOs with the current filters and a callsign match
+        // --- Callsign Search Logic ---
+
         function searchQsosByCallsign(callInput) {
             const search = callInput.trim().toUpperCase();
             if (!search) return [];
@@ -570,19 +635,15 @@ Contributions:
             );
         }
 
-        // Helper: Zoom map to grid
         function focusOnGrid(gridSquare) {
             let coords = gridToCoordinates(gridSquare);
-            // Set the map view so the grid is centered and zoom in
             map.setView([coords.lat + 0.5, coords.lng + 1], 8, { animate: true });
         }
 
-        // Handle search box events
         document.getElementById('call-search').addEventListener('keyup', function (e) {
             if (e.key === 'Enter') doCallsignSearch();
         });
         document.getElementById('call-search').addEventListener('blur', function (e) {
-            // If someone clicks out of the box with text, do search
             if (this.value.trim() !== "") doCallsignSearch();
         });
 
@@ -601,7 +662,6 @@ Contributions:
                 return;
             }
 
-            // Gather unique grids worked and display details
             const grids = [...new Set(results.map(qso =>
                 qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : null
             ).filter(Boolean))];
@@ -613,10 +673,10 @@ Contributions:
                             <th>Mode</th>
                             <th>Date</th>
                             <th>Grid</th>
+                            <th>Status</th>
                         </tr>`;
             results.sort((a, b) => (b['qso_date'] || '').localeCompare(a['qso_date'] || ''));
             results.forEach(qso => {
-                // Format date: YYYYMMDD[hhmmss] → YYYY-MM-DD [UTC]
                 let d = '';
                 if (qso['qso_date']) {
                     d = qso['qso_date'].substr(0, 4) + '-' +
@@ -627,11 +687,15 @@ Contributions:
                             qso['time_on'].substr(2, 2) + ' UTC';
                     }
                 }
+                let grid = qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : '';
+                let status = confirmedGrids.has(grid) ?
+                    '<span style="color:#00b300;font-weight:bold;">✔</span>' : '-';
                 html += `<tr>
                             <td>${qso['band'] ? qso['band'].toUpperCase() : ''}</td>
                             <td>${qso['submode'] === 'FT4' ? 'FT4' : (qso['mode'] || '')}</td>
                             <td>${d}</td>
-                            <td>${qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : ''}</td>
+                            <td>${grid}</td>
+                            <td style="text-align:center;">${status}</td>
                         </tr>`;
             });
             html += '</table>';
@@ -639,7 +703,6 @@ Contributions:
             box.innerHTML = html;
             box.style.display = 'block';
 
-            // Zoom to first grid found
             if (grids.length > 0) focusOnGrid(grids[0]);
         }
     </script>
