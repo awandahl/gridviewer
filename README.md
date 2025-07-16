@@ -1,6 +1,4 @@
-<img src="https://github.com/user-attachments/assets/276c1bc4-2384-4db7-a174-d0d07c90d47b" alt="gridviewer_screenshots" width="1000">
-![gt_screeshot](https://github.com/user-attachments/assets/f8ae3ef3-b132-408a-bb29-794047affd9b)
-
+<img src="https://github.com/user-attachments/assets/f8ae3ef3-b132-408a-bb29-794047affd9b" alt="gridviewer_screenshots" width="1000">
 
 ## What GridViewer Can Do
 
