@@ -1,6 +1,9 @@
 <!DOCTYPE html>
+
 <!--
 gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
+
+Ver. 0.8d
 
 Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
 This software is released under the BSD 2-Clause License, as originally chosen by Jeffrey B. Otterson, N1KDO.
@@ -41,9 +44,13 @@ Contributions:
 -->
 
 <html>
+
 <head>
     <title>GridViewer</title>
     <meta name="viewport" content="width=device-width, initial-scale=0.75">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+    <link rel="icon" href="https://github.com/awandahl/gridviewer/blob/main/favicon-16x16.png?raw=true"
+        type="image/x-icon">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <style>
         body {
@@ -51,36 +58,46 @@ Contributions:
             border: 0;
             font-family: sans-serif;
         }
+
         .header {
             height: 4vh;
             font-size: 3vh;
             text-align: center;
         }
-        #band-filters, #mode-filters, #year-filters {
+
+        #band-filters,
+        #mode-filters,
+        #year-filters {
             text-align: center;
             margin: 1em;
         }
+
         #map {
             width: 100vw;
             height: 90vh;
             margin: auto;
             margin-bottom: 2.5vh;
         }
-        .footerLeft, .footerMid, .footerRight {
+
+        .footerLeft,
+        .footerMid,
+        .footerRight {
             position: fixed;
             bottom: 0;
             height: 5vh;
             font-size: 2vh;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255, 255, 255, 0.9);
             z-index: 1000;
             width: 33.33%;
             box-sizing: border-box;
             padding: 0 10px;
         }
+
         .footerLeft {
             left: 0;
             text-align: left;
         }
+
         .footerMid {
             left: 33.33%;
             width: 33.33%;
@@ -89,12 +106,11 @@ Contributions:
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: rgba(255,255,255,0.9);
-            z-index: 1000;
             font-size: 3vh;
             box-sizing: border-box;
             padding: 0 10px;
         }
+
         .footerMid a {
             color: #c00;
             text-decoration: none;
@@ -105,22 +121,25 @@ Contributions:
             background: #fff3f3;
             border: 2px solid #c00;
             transition: background 0.2s, color 0.2s;
-            box-shadow: 0 2px 8px rgba(200,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(200, 0, 0, 0.08);
         }
-        .footerMid a:hover, .footerMid a:focus {
+
+        .footerMid a:hover,
+        .footerMid a:focus {
             color: #fff;
             background: #c00;
-            text-decoration: none;
             border-color: #a00;
         }
+
         .footerRight {
             right: 0;
             text-align: right;
         }
+
         .leaflet-label {
             font-weight: bold;
             color: #000;
-            background: rgba(255,255,255,0.7);
+            background: rgba(255, 255, 255, 0.7);
             border-radius: 2px;
             padding: 1px 4px;
             font-size: 12px;
@@ -132,6 +151,7 @@ Contributions:
             text-align: center;
             pointer-events: auto;
         }
+
         .legend-gridcolor {
             display: inline-block;
             width: 18px;
@@ -142,14 +162,17 @@ Contributions:
             border: 1px solid #888;
             margin-right: 5px;
         }
+
         .legend-gridcolor.confirmed {
             background: #00b300;
         }
+
         .summary {
             margin: 8px;
             font-size: 1.8vh;
             text-align: center;
         }
+
         .legend {
             margin: 8px;
             font-size: 1.7vh;
@@ -158,6 +181,7 @@ Contributions:
     </style>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 </head>
+
 <body>
     <div id="logo-container" style="text-align:center; margin-top:32px;">
         <img
@@ -178,9 +202,7 @@ Contributions:
             "
         >
     </div>
-    <div id="header" class="header">
-        Grids Worked by Band, Mode, and Year
-    </div>
+    <div id="header" class="header">Grids Worked by Band, Mode, and Year</div>
     <div id="legend" class="legend"></div>
     <div id="summary" class="summary"></div>
     <div id="band-filters"></div>
@@ -192,58 +214,90 @@ Contributions:
         <a href="https://github.com/awandahl/gridviewer">SM0HPL GitHub</a>
     </div>
     <div id="footerRight" class="footerRight">
-        <label for="call-search"
-                style="font-weight:bold; font-size:1.5vh; margin-right:6px;">
+        <label for="call-search" style="font-weight:bold; font-size:1.5vh; margin-right:6px;">
             Search Call:
         </label>
-        <input
-            type="text"
-            id="call-search"
-            placeholder="Enter callsign..."
-            style="font-size:1.5vh; padding:2px 6px; width:140px;"
-        >
+        <input type="text" id="call-search" placeholder="Enter callsign..." style="font-size:1.5vh; padding:2px 6px; width:140px;">
     </div>
-    <div
-        id="callsign-results"
-        style="
-            display: none;
-            position: fixed;
-            right: 10px;
-            bottom: 6vh;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            font-size: 1.6vh;
-            min-width: 250px;
-            max-width: 320px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-            z-index: 2000;
-        "
-    ></div>
+    <div id="callsign-results"
+        style="display: none; position: fixed; right: 10px; bottom: 6vh; background: #fff; border: 1px solid #ccc; border-radius: 4px; padding: 10px; font-size: 1.6vh; min-width: 520px; max-width: 700px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 2000;">
+        <span id="callsign-results-close"
+          style="position:absolute;top:6px;right:10px;font-size:23px;cursor:pointer;font-weight:bold;color:#c00;z-index:2050;"
+          title="Close">&times;</span>
+        <!-- Results content will be filled in by JS -->
+    </div>
     <script>
         let allQsos = [];
-        let confirmedQsos = [];
-        let confirmedGrids = new Set();
-        let map = null;
-        let gridLayers = {};
-        let gridToCallsigns = {};
+let confirmedGridBandModeYearSet = new Set();
+let confirmedQsoSet = new Set();
+let gridToCallsigns = {};
+let gridRects = {}; // To map gridSquare (e.g. 'JO65') to its Leaflet rectangle
+let highlightedGridSquare = null;
+let confirmedFilteredGrids = new Set();
+let map = null;
 
-        // Internal band names for logic (must match ADIF, so lowercase)
+function isGridConfirmed(gridSquare) {
+    return confirmedFilteredGrids && confirmedFilteredGrids.has(gridSquare);
+}
+
+    window.onload = function () {
+
         const allBands = [
-            "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m",
-            "6m", "4m", "2m", "1.25m", "70cm", "33cm", "23cm"
+            "160M", "80M", "60M", "40M", "30M", "20M", "17M", "15M", "12M", "10M",
+            "6M", "4M", "2M", "1.25M", "70CM", "33CM", "23CM"
         ];
-        // Display labels (with capital M)
-        const allBandsDisplay = allBands.map(band => band.replace('cm', 'CM').replace('m', 'M'));
-
-        // Internal mode names for logic (must match ADIF, so uppercase)
+        const allBandsDisplay = allBands;
         const allModes = ["FT4", "FT8", "SSB", "CW", "FM", "AM", "RTTY"];
-
         const minYear = 2015;
         const maxYear = new Date().getFullYear() + 1;
         const allYears = [];
         for (let y = minYear; y <= maxYear; y++) allYears.push(y);
+
+function parse_adif_line(block) {
+    let fields = {};
+    let regex = /<([^:>]+)(?::\d+)?>\s*([^<]*)/g;
+    let match;
+    while ((match = regex.exec(block)) !== null) {
+        let key = match[1].trim().toUpperCase();
+        let value = match[2].trim().toUpperCase();
+        fields[key] = value;
+    }
+    return fields;
+}
+
+        function getStandardMode(qso) {
+            if (!qso) return '';
+            if (qso['SUBMODE']) {
+                if (qso['SUBMODE'] === 'FT4' || qso['SUBMODE'] === 'FT8') return qso['SUBMODE'];
+            }
+            return qso['MODE'] ? qso['MODE'] : '';
+        }
+
+function processConfirmedAdi(text) {
+    confirmedGridBandModeYearSet.clear();
+    confirmedQsoSet.clear(); // <-- Add this to clear previous entries
+    let eoh = text.indexOf("<EOH>");
+    if (eoh >= 0) text = text.slice(eoh + 5);
+    const records = text.split(/<EOR>/i).map(r => r.trim()).filter(r => r.length > 0);
+    for (let block of records) {
+        let qso = parse_adif_line(block);
+        if (
+            qso['GRIDSQUARE'] && qso['GRIDSQUARE'].length >= 4 &&
+            qso['BAND'] && qso['QSO_DATE'] && qso['QSO_DATE'].length >= 4 &&
+            qso['CALL']
+        ) {
+            let grid = qso['GRIDSQUARE'].substr(0, 4);
+            let band = qso['BAND'];
+            let year = qso['QSO_DATE'].substr(0, 4);
+            let mode = getStandardMode(qso);
+            let callsign = qso['CALL'];
+            let keyQso = `${grid}:${band}:${mode}:${year}:${callsign}`;
+            let keyGrid = `${grid}:${band}:${mode}:${year}`;
+            confirmedQsoSet.add(keyQso);   // For per-QSO (callsign) confirmation
+            confirmedGridBandModeYearSet.add(keyGrid); // For grid-level coloring
+        }
+    }
+}
 
         function gridToCoordinates(gridSquare) {
             gridSquare = gridSquare.toLowerCase();
@@ -255,18 +309,17 @@ Contributions:
             lat += (gridSquare.charCodeAt(3) - zero);
             lon = lon - 180;
             lat = lat - 90;
-            return { lat: lat, lng: lon };
+            return { lat, lng: lon };
         }
 
         function addSquare(map, gridSquare, callsignYears, isConfirmed) {
             let coords = gridToCoordinates(gridSquare);
-            let lat = coords['lat'];
-            let lon = coords['lng'];
+            let lat = coords.lat;
+            let lon = coords.lng;
             let bounds = [
                 [lat, lon],
                 [lat + 1, lon + 2]
             ];
-
             let fillColor = isConfirmed ? "#00b300" : "#ff0000";
             let rect = L.rectangle(bounds, {
                 color: fillColor,
@@ -275,134 +328,67 @@ Contributions:
                 fillOpacity: 0.25
             }).addTo(map);
 
+            gridRects[gridSquare] = rect; // Register the rectangle for later highlighting
+
             let labelLat = lat + 0.5;
             let labelLon = lon + 1;
             let marker = L.marker([labelLat, labelLon], {
                 icon: L.divIcon({
                     className: 'leaflet-label',
-                    html: gridSquare.toUpperCase(),
+                    html: gridSquare,
                     iconSize: [40, 20],
                     iconAnchor: [20, 10]
                 }),
                 interactive: true
             }).addTo(map);
 
-            // Tooltip content with years per callsign
-            let tooltipContent = `<b>${gridSquare.toUpperCase()}</b>`;
+            let tooltipContent = `<b>${gridSquare}</b>`;
             if (isConfirmed) {
                 tooltipContent += `<br><span style="color:#00b300;font-weight:bold;">&#10003; Confirmed (LoTW)</span>`;
             }
             tooltipContent += `<br>Stations:<br>`;
-            let calls = Object.keys(callsignYears);
-            if (calls.length > 0) {
-                tooltipContent += calls
-                    .sort()
-                    .map(call => {
-                        let yearsArr = Array.from(callsignYears[call]).sort();
-                        return `${call} (${yearsArr.join(', ')})`;
-                    })
-                    .join('<br>');
-            } else {
-                tooltipContent += 'None';
-            }
+            let band = getSelectedBands()[0] || "";
+let mode = getSelectedModes()[0] || "";
+let calls = Object.keys(callsignYears);
+if (calls.length > 0) {
+    tooltipContent += calls
+        .sort()
+        .map(call => {
+            let yearsArr = Array.from(callsignYears[call]).sort();
+            let yearList = yearsArr.map(year => {
+                let key = `${gridSquare}:${band}:${mode}:${year}:${call}`;
+                let isConfirmed = confirmedQsoSet.has(key);
+                return isConfirmed ? `${year} ✔` : year;
+            }).join(', ');
+            return `${call} (${yearList})`;
+        })
+        .join('<br>');
+} else {
+    tooltipContent += 'None';
 
+            }
             rect.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
             marker.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
-
-            return [rect, marker];
         }
 
         function drawMap() {
-            if (map !== null) {
-                map.remove();
-            }
+            if (map !== null) map.remove();
             map = L.map('map').setView([54.5, 15.5], 4);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 18,
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
-            gridLayers = {};
         }
-
-        function parse_adif_line(line) {
-            let fields = {};
-            let regex = /<([^:>]+)(?::\d+)?>((?:.|\n)*?)(?=<|$)/g;
-            let match;
-            while ((match = regex.exec(line)) !== null) {
-                fields[match[1].toLowerCase()] = match[2].trim();
-            }
-            if (fields['mode']) fields['mode'] = fields['mode'].toUpperCase().trim();
-            if (fields['submode']) fields['submode'] = fields['submode'].toUpperCase().trim();
-            if (fields['call']) fields['call'] = fields['call'].toUpperCase().trim();
-            return fields;
-        }
-
-        function processAdiLines(text) {
-            let lines = text.split("\n");
-            allQsos = [];
-            gridToCallsigns = {};
-            let bandsFound = new Set();
-            let modesFound = new Set();
-            let yearsFound = new Set();
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (line.length === 0) continue;
-                let qso = parse_adif_line(line);
-                if (qso['band']) bandsFound.add(qso['band'].toLowerCase());
-                if (qso['submode'] && qso['submode'] === 'FT4') {
-                    modesFound.add('FT4');
-                } else if (qso['mode']) {
-                    modesFound.add(qso['mode'].toUpperCase());
-                }
-                let year = '';
-                if (qso['qso_date'] && qso['qso_date'].length >= 4) {
-                    year = qso['qso_date'].substr(0, 4);
-                    yearsFound.add(year);
-                }
-                if (qso['gridsquare'] && qso['gridsquare'].length >= 4 && qso['call']) {
-                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
-                    let call = qso['call'].toUpperCase();
-                    if (!gridToCallsigns[grid]) gridToCallsigns[grid] = {};
-                    if (!gridToCallsigns[grid][call]) gridToCallsigns[grid][call] = new Set();
-                    if (year) gridToCallsigns[grid][call].add(year);
-                }
-                allQsos.push(qso);
-            }
-            generateBandCheckboxes(bandsFound);
-            generateModeCheckboxes(modesFound);
-            generateYearCheckboxes(yearsFound);
-            updateMap();
-        }
-
-        function processConfirmedAdi(text) {
-            let lines = text.split("\n");
-            confirmedQsos = [];
-            confirmedGrids = new Set();
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-                if (line.length === 0) continue;
-                let qso = parse_adif_line(line);
-                if (qso['gridsquare'] && qso['gridsquare'].length >= 4) {
-                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
-                    confirmedGrids.add(grid);
-                }
-                confirmedQsos.push(qso);
-            }
-        }
-
-        // --- Select All / Reset Checkboxes ---
 
         function generateBandCheckboxes(bandsFound) {
             const container = document.getElementById('band-filters');
             container.innerHTML = '';
             container.innerHTML += `<label><input type="checkbox" id="selectAllBands">Select All Bands</label> `;
             container.innerHTML += `<label><input type="checkbox" id="resetBands">Reset Bands</label> `;
-
             allBands.forEach((band, i) => {
-                let checked = (band === '6m') ? 'checked' : '';
+                let checked = (band === '6M') ? 'checked' : '';
                 container.innerHTML += `<label><input type="checkbox" class="band-checkbox" value="${band}" ${checked}>${allBandsDisplay[i]}</label> `;
             });
-
             document.getElementById('selectAllBands').addEventListener('change', function () {
                 let checked = this.checked;
                 document.querySelectorAll('.band-checkbox').forEach(cb => cb.checked = checked);
@@ -410,18 +396,16 @@ Contributions:
             });
             document.getElementById('resetBands').addEventListener('change', function () {
                 if (this.checked) {
-                    document.querySelectorAll('.band-checkbox').forEach(cb => cb.checked = (cb.value === '6m'));
+                    document.querySelectorAll('.band-checkbox').forEach(cb => cb.checked = (cb.value === '6M'));
                     document.getElementById('selectAllBands').checked = false;
                     this.checked = false;
                     updateMap();
                 }
             });
-
             Array.from(document.querySelectorAll('.band-checkbox')).forEach(cb => {
                 cb.addEventListener('change', function () {
-                    if (!this.checked) {
-                        document.getElementById('selectAllBands').checked = false;
-                    } else {
+                    if (!this.checked) document.getElementById('selectAllBands').checked = false;
+                    else {
                         let allChecked = Array.from(document.querySelectorAll('.band-checkbox')).every(cb => cb.checked);
                         document.getElementById('selectAllBands').checked = allChecked;
                     }
@@ -435,12 +419,10 @@ Contributions:
             container.innerHTML = '';
             container.innerHTML += `<label><input type="checkbox" id="selectAllModes">Select All Modes</label> `;
             container.innerHTML += `<label><input type="checkbox" id="resetModes">Reset Modes</label> `;
-
             allModes.forEach(mode => {
                 let checked = (mode === 'FT8') ? 'checked' : '';
                 container.innerHTML += `<label><input type="checkbox" class="mode-checkbox" value="${mode}" ${checked}>${mode}</label> `;
             });
-
             document.getElementById('selectAllModes').addEventListener('change', function () {
                 let checked = this.checked;
                 document.querySelectorAll('.mode-checkbox').forEach(cb => cb.checked = checked);
@@ -454,12 +436,10 @@ Contributions:
                     updateMap();
                 }
             });
-
             Array.from(document.querySelectorAll('.mode-checkbox')).forEach(cb => {
                 cb.addEventListener('change', function () {
-                    if (!this.checked) {
-                        document.getElementById('selectAllModes').checked = false;
-                    } else {
+                    if (!this.checked) document.getElementById('selectAllModes').checked = false;
+                    else {
                         let allChecked = Array.from(document.querySelectorAll('.mode-checkbox')).every(cb => cb.checked);
                         document.getElementById('selectAllModes').checked = allChecked;
                     }
@@ -473,12 +453,10 @@ Contributions:
             container.innerHTML = '';
             container.innerHTML += `<label><input type="checkbox" id="selectAllYears">All Years</label> `;
             container.innerHTML += `<label><input type="checkbox" id="resetYears">Reset Years</label> `;
-
             allYears.forEach(year => {
                 let checked = yearsFound.has(String(year)) ? 'checked' : '';
                 container.innerHTML += `<label><input type="checkbox" class="year-checkbox" value="${year}" ${checked}>${year}</label> `;
             });
-
             document.getElementById('selectAllYears').addEventListener('change', function () {
                 let checked = this.checked;
                 document.querySelectorAll('.year-checkbox').forEach(cb => cb.checked = checked);
@@ -493,12 +471,10 @@ Contributions:
                     updateMap();
                 }
             });
-
             Array.from(document.querySelectorAll('.year-checkbox')).forEach(cb => {
                 cb.addEventListener('change', function () {
-                    if (!this.checked) {
-                        document.getElementById('selectAllYears').checked = false;
-                    } else {
+                    if (!this.checked) document.getElementById('selectAllYears').checked = false;
+                    else {
                         let allChecked = Array.from(document.querySelectorAll('.year-checkbox')).every(cb => cb.checked);
                         document.getElementById('selectAllYears').checked = allChecked;
                     }
@@ -510,26 +486,11 @@ Contributions:
         function getSelectedBands() {
             return Array.from(document.querySelectorAll('.band-checkbox:checked')).map(cb => cb.value);
         }
-
         function getSelectedModes() {
-            return Array.from(document.querySelectorAll('.mode-checkbox:checked')).map(cb => cb.value.toUpperCase());
+            return Array.from(document.querySelectorAll('.mode-checkbox:checked')).map(cb => cb.value);
         }
-
         function getSelectedYears() {
             return Array.from(document.querySelectorAll('.year-checkbox:checked')).map(cb => cb.value);
-        }
-
-        function qsoMatchesSelectedModes(qso, selectedModes) {
-            if (selectedModes.includes('FT4')) {
-                if (qso['mode'] === 'MFSK' && qso['submode'] === 'FT4') return true;
-            }
-            if (selectedModes.includes('FT8')) {
-                if (qso['mode'] === 'FT8') return true;
-            }
-            for (let mode of selectedModes) {
-                if (mode !== 'FT8' && mode !== 'FT4' && qso['mode'] === mode) return true;
-            }
-            return false;
         }
 
         function updateMap() {
@@ -537,89 +498,121 @@ Contributions:
             let selectedBands = getSelectedBands();
             let selectedModes = getSelectedModes();
             let selectedYears = getSelectedYears();
+
             let grids = new Set();
             let gridToFilteredCallsigns = {};
-            let confirmedFilteredGrids = new Set();
-
             for (let qso of allQsos) {
-                let year = '';
-                if (qso['qso_date'] && qso['qso_date'].length >= 4) {
-                    year = qso['qso_date'].substr(0, 4);
-                }
+                let year = qso.QSO_DATE?.substr(0, 4);
+                let band = qso.BAND;
+                let mode = getStandardMode(qso);
                 if (
-                    qso['band'] &&
-                    selectedBands.includes(qso['band'].toLowerCase()) &&
-                    qsoMatchesSelectedModes(qso, selectedModes) &&
-                    selectedYears.includes(year) &&
-                    qso['gridsquare'] && qso['gridsquare'].length >= 4 &&
-                    qso['call']
+                    band && selectedBands.includes(band) &&
+                    mode && selectedModes.includes(mode) &&
+                    year && selectedYears.includes(year) &&
+                    qso.GRIDSQUARE && qso.GRIDSQUARE.length >= 4 &&
+                    qso.CALL
                 ) {
-                    let grid = qso['gridsquare'].toUpperCase().substr(0, 4);
-                    let call = qso['call'].toUpperCase();
+                    let grid = qso.GRIDSQUARE.substr(0, 4);
                     grids.add(grid);
                     if (!gridToFilteredCallsigns[grid]) gridToFilteredCallsigns[grid] = {};
-                    if (!gridToFilteredCallsigns[grid][call]) gridToFilteredCallsigns[grid][call] = new Set();
-                    if (year) gridToFilteredCallsigns[grid][call].add(year);
+                    if (!gridToFilteredCallsigns[grid][qso.CALL]) gridToFilteredCallsigns[grid][qso.CALL] = new Set();
+                    gridToFilteredCallsigns[grid][qso.CALL].add(year);
                 }
             }
 
-            // Find confirmed grids for these selections
-            for (const grid of grids) {
-                if (confirmedGrids.has(grid)) confirmedFilteredGrids.add(grid);
+            confirmedFilteredGrids.clear();
+            for (let grid of grids) {
+                let isConfirmed = false;
+                for (let band of selectedBands) {
+                    for (let mode of selectedModes) {
+                        for (let year of selectedYears) {
+                            let key = `${grid}:${band}:${mode}:${year}`;
+                            if (confirmedGridBandModeYearSet.has(key)) {
+                                isConfirmed = true;
+                                break;
+                            }
+                        }
+                        if (isConfirmed) break;
+                    }
+                    if (isConfirmed) break;
+                }
+                if (isConfirmed) confirmedFilteredGrids.add(grid);
             }
 
-            // Draw all grid squares with their confirmed status
             for (let grid of grids) {
                 let callsignYears = gridToFilteredCallsigns[grid] || {};
                 let isConf = confirmedFilteredGrids.has(grid);
                 addSquare(map, grid, callsignYears, isConf);
+
             }
 
-            // Update legend and summary
-            let legend = `
-                <span class="legend-gridcolor"></span>Worked&nbsp;&nbsp;
-                <span class="legend-gridcolor confirmed"></span>Confirmed by LoTW
-            `;
-            document.getElementById('legend').innerHTML = legend;
-
-            document.getElementById("header").innerHTML =
-                `${grids.size} Grids Worked`;
+            document.getElementById("header").innerHTML = `${grids.size} Grids Worked`;
             document.getElementById("summary").innerHTML =
-                `Confirmed grids: <b>${confirmedFilteredGrids.size}</b> of <b>${grids.size}</b> (${grids.size > 0 ? Math.round((confirmedFilteredGrids.size / grids.size) * 100) : 0}%)`;
+                `Confirmed: <b>${confirmedFilteredGrids.size}</b> / <b>${grids.size}</b> (${grids.size > 0 ? Math.round(confirmedFilteredGrids.size / grids.size * 100) : 0}%)`;
+
+            document.getElementById("legend").innerHTML = `
+                <span class="legend-gridcolor"></span>Worked
+                <span class="legend-gridcolor confirmed"></span>Confirmed
+            `;
         }
 
-        // --- File processing and page Boot ---
+        function processAdiLines(text) {
+            let eoh = text.indexOf("<EOH>");
+            if (eoh >= 0) text = text.slice(eoh + 5);
+            const records = text.split(/<EOR>/i).map(r => r.trim()).filter(r => r.length > 0);
+            allQsos = [];
+            gridToCallsigns = {};
+            let bandsFound = new Set();
+            let modesFound = new Set();
+            let yearsFound = new Set();
+            for (let block of records) {
+                let qso = parse_adif_line(block);
+                if (qso.BAND) bandsFound.add(qso.BAND);
+                let stdMode = getStandardMode(qso);
+                if (stdMode) modesFound.add(stdMode);
+                let year = '';
+                if (qso.QSO_DATE && qso.QSO_DATE.length >= 4) {
+                    year = qso.QSO_DATE.substr(0, 4);
+                    yearsFound.add(year);
+                }
+                if (qso.GRIDSQUARE && qso.GRIDSQUARE.length >= 4 && qso.CALL) {
+                    let grid = qso.GRIDSQUARE.substr(0, 4);
+                    let call = qso.CALL;
+                    if (!gridToCallsigns[grid]) gridToCallsigns[grid] = {};
+                    if (!gridToCallsigns[grid][call]) gridToCallsigns[grid][call] = new Set();
+                    if (year) gridToCallsigns[grid][call].add(year);
+                }
+                allQsos.push(qso);
+            }
+            generateBandCheckboxes(bandsFound);
+            generateModeCheckboxes(modesFound);
+            generateYearCheckboxes(yearsFound);
+            updateMap();
+        }
 
-        window.onload = function () {
-            // Load confirmed grids first (needs to be present in same folder or configurable)
+        function boot() {
             fetch('lotwreport.adi?nocache=' + new Date().getTime())
-                .then(response => response.text())
-                .then(function (conftext) {
-                    processConfirmedAdi(conftext);
-                    // Then main log
+                .then(r => r.text())
+                .then(function (txt) {
+                    txt = txt.toUpperCase(); // Normalize once here!
+                    processConfirmedAdi(txt);
                     fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
-                        .then(response => response.text())
-                        .then(function (text) {
-                            processAdiLines(text);
+                        .then(r => r.text())
+                        .then(function (txt2) {
+                            txt2 = txt2.toUpperCase(); // Normalize once here!
+                            processAdiLines(txt2);
                         });
                 });
+        }
+        boot();
+        setInterval(boot, 1800000);
 
-            // Reload both files every 30 minutes
-            setInterval(function () {
-                fetch('lotwreport.adi?nocache=' + new Date().getTime())
-                    .then(response => response.text())
-                    .then(function (conftext) {
-                        processConfirmedAdi(conftext);
-                        fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
-                            .then(response => response.text())
-                            .then(function (text) {
-                                processAdiLines(text);
-                            });
-                    });
-            }, 1800000);
-        };
-
-        // --- Callsign Search Logic ---
+        document.getElementById('call-search').addEventListener('keyup', function (e) {
+            if (e.key === 'Enter') doCallsignSearch();
+        });
+//        document.getElementById('call-search').addEventListener('blur', function (e) {
+//            if (this.value.trim() !== "") doCallsignSearch();
+//        });
 
         function searchQsosByCallsign(callInput) {
             const search = callInput.trim().toUpperCase();
@@ -628,30 +621,47 @@ Contributions:
             const modes = getSelectedModes();
             const years = getSelectedYears();
             return allQsos.filter(qso =>
-                qso['call'] && qso['call'].toUpperCase().includes(search) &&
-                qso['band'] && bands.includes(qso['band'].toLowerCase()) &&
-                qsoMatchesSelectedModes(qso, modes) &&
-                qso['qso_date'] && years.includes(qso['qso_date'].substr(0, 4))
+                qso.CALL?.includes(search) &&
+                bands.includes(qso.BAND) &&
+                years.includes(qso.QSO_DATE?.substr(0, 4)) &&
+                modes.includes(getStandardMode(qso))
             );
         }
 
-        function focusOnGrid(gridSquare) {
-            let coords = gridToCoordinates(gridSquare);
-            map.setView([coords.lat + 0.5, coords.lng + 1], 8, { animate: true });
-        }
+function focusOnGrid(gridSquare) {
+    let coords = gridToCoordinates(gridSquare);
+    map.setView([coords.lat + 0.5, coords.lng + 1], 7, { animate: true });
 
-        document.getElementById('call-search').addEventListener('keyup', function (e) {
-            if (e.key === 'Enter') doCallsignSearch();
+    // Reset all rectangles first
+    for (let grid in gridRects) {
+        if (!gridRects.hasOwnProperty(grid)) continue;
+        let rect = gridRects[grid];
+        let confirmed = isGridConfirmed(grid);
+        rect.setStyle({
+            color: confirmed ? "#00b300" : "#ff0000",
+            fillColor: confirmed ? "#00b300" : "#ff0000",
+            fillOpacity: 0.25
         });
-        document.getElementById('call-search').addEventListener('blur', function (e) {
-            if (this.value.trim() !== "") doCallsignSearch();
+    }
+    highlightedGridSquare = null;
+
+    // Highlight the current rectangle
+    let rect = gridRects[gridSquare];
+    if (rect) {
+        rect.setStyle({
+            color: "yellow",
+            fillColor: "yellow",
+            fillOpacity: 0.5
         });
+        highlightedGridSquare = gridSquare;  // <-- ONLY store the gridSquare string
+    }
+}
 
         function doCallsignSearch() {
             const callInput = document.getElementById('call-search').value;
             const results = searchQsosByCallsign(callInput);
             const box = document.getElementById('callsign-results');
-            box.innerHTML = '';
+box.innerHTML = '<span id="callsign-results-close" style="position:absolute;top:6px;right:10px;font-size:23px;cursor:pointer;font-weight:bold;color:#c00;z-index:2050;" title="Close">&times;</span>';
             if (!callInput.trim()) {
                 box.style.display = 'none';
                 return;
@@ -662,49 +672,63 @@ Contributions:
                 return;
             }
 
-            const grids = [...new Set(results.map(qso =>
-                qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : null
-            ).filter(Boolean))];
+const grids = [...new Set(results.map(qso =>
+    qso.GRIDSQUARE ? qso.GRIDSQUARE.substr(0, 4) : null
+).filter(Boolean))];
+updateMap();
 
-            let html = `<b>${callInput.trim().toUpperCase()}</b> found in <b>${results.length}</b> contact(s):<hr>`;
-            html += `<table style="width:100%; font-size:1.6vh;">
-                        <tr>
-                            <th>Band</th>
-                            <th>Mode</th>
-                            <th>Date</th>
-                            <th>Grid</th>
-                            <th>Status</th>
-                        </tr>`;
-            results.sort((a, b) => (b['qso_date'] || '').localeCompare(a['qso_date'] || ''));
-            results.forEach(qso => {
-                let d = '';
-                if (qso['qso_date']) {
-                    d = qso['qso_date'].substr(0, 4) + '-' +
-                        qso['qso_date'].substr(4, 2) + '-' +
-                        qso['qso_date'].substr(6, 2);
-                    if (qso['time_on'] && qso['time_on'].length >= 4) {
-                        d += ' ' + qso['time_on'].substr(0, 2) + ':' +
-                            qso['time_on'].substr(2, 2) + ' UTC';
-                    }
-                }
-                let grid = qso['gridsquare'] ? qso['gridsquare'].substr(0, 4).toUpperCase() : '';
-                let status = confirmedGrids.has(grid) ?
-                    '<span style="color:#00b300;font-weight:bold;">✔</span>' : '-';
-                html += `<tr>
-                            <td>${qso['band'] ? qso['band'].toUpperCase() : ''}</td>
-                            <td>${qso['submode'] === 'FT4' ? 'FT4' : (qso['mode'] || '')}</td>
-                            <td>${d}</td>
-                            <td>${grid}</td>
-                            <td style="text-align:center;">${status}</td>
-                        </tr>`;
-            });
-            html += '</table>';
+let html = `<b style="background: yellow; color: black; padding:2px 6px; border-radius:3px;">${callInput.trim().toUpperCase()}</b> found in <b>${results.length}</b> contact(s):<hr>`;
+html += `<table style="width:100%; font-size:1.6vh;">
+            <tr>
+                <th>Band</th><th>Mode</th><th>Date</th><th>Grid</th><th>Call</th><th>LoTW Status</th>
+            </tr>`;
+results.sort((a, b) => (b.QSO_DATE || '').localeCompare(a.QSO_DATE || ''));
+results.forEach(qso => {
+    let d = qso.QSO_DATE?.replace(/^(\d{4})(\d{2})(\d{2})$/, '$1-$2-$3') || '';
+    if (qso.TIME_ON) d += ' ' + qso.TIME_ON.slice(0, 2) + ':' + qso.TIME_ON.slice(2, 4);
+    let grid = qso.GRIDSQUARE ? qso.GRIDSQUARE.substr(0, 4) : '';
+    let band = qso.BAND;
+    let mode = getStandardMode(qso);
+    let year = qso.QSO_DATE?.substr(0, 4);
+    let call = qso.CALL;
+    let key = `${grid}:${band}:${mode}:${year}:${call}`;
+    let isConfirmed = confirmedQsoSet.has(key);
+    html += `<tr>
+                <td>${band || ''}</td>
+                <td>${mode}</td>
+                <td>${d}</td>
+                <td>${grid}</td>
+                <td>${call || ''}</td>
+                <td style="text-align:center;">${isConfirmed ? '&#10003;' : '-'}</td>
+            </tr>`;
+});
+html += '</table>';
+box.innerHTML += html;
+box.style.display = 'block';
+if (grids.length > 0) focusOnGrid(grids[0]);
 
-            box.innerHTML = html;
-            box.style.display = 'block';
-
-            if (grids.length > 0) focusOnGrid(grids[0]);
         }
+
+    };
+
+document.body.addEventListener('click', function (e) {
+    if (e.target && e.target.id === 'callsign-results-close') {
+        document.getElementById('callsign-results').style.display = 'none';
+        // Reset highlight of the LAST focused gridSquare, if any
+        if (highlightedGridSquare && gridRects[highlightedGridSquare]) {
+            const rect = gridRects[highlightedGridSquare];
+            const confirmed = isGridConfirmed(highlightedGridSquare);
+            rect.setStyle({
+                color: confirmed ? "#00b300" : "#ff0000",
+                fillColor: confirmed ? "#00b300" : "#ff0000",
+                fillOpacity: 0.25
+            });
+            highlightedGridSquare = null;
+        }
+    }
+});
+
     </script>
 </body>
+
 </html>
