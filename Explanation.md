@@ -19,7 +19,7 @@
 ### 2. Styling (CSS)
 
 - Ensures map and interface look clean and modern.
-- Uses specific colors for "worked" (`#ff0000`/red) and "confirmed" (`#00b300`/green) grid squares, aligning with common amateur radio color conventions[^4].
+- Uses specific colors for "worked" (`#ff0000`/red) and "confirmed" (`#00b300`/green) grid squares, aligning with common amateur radio color conventions.
 
 
 ### 3. JavaScript (Main Logic)
@@ -95,7 +95,7 @@
 
 1. **Loads two log files**: one for all worked QSOs, another for confirmed QSOs.
 2. **Parses** each contact for band, mode, year, callsign, and grid.
-3. **Displays a map**: each grid square is colored if worked, green if confirmed[^2][^4].
+3. **Displays a map**: each grid square is colored if worked, green if confirmed.
 4. **Lets the user filter**: see which grids were worked or confirmed by specific band, mode, or year.
 5. **Shows callsign details**: search by callsign to see all grids worked, confirmed, and QSO details, and zoom to them.
 6. **Auto-refreshes**: keeps map up to date if new log files are received.
