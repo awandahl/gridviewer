@@ -3,7 +3,7 @@
 <!--
 gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
 
-Ver. 0.8f
+Ver. 0.8g
 
 Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
 This software is released under the BSD 2-Clause License, as originally chosen by Jeffrey B. Otterson, N1KDO.
@@ -180,6 +180,7 @@ Contributions:
         }
     </style>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://ha8tks.github.io/Leaflet.Maidenhead/src/L.Maidenhead.js"></script>
 </head>
 
 <body>
@@ -247,7 +248,7 @@ function isGridConfirmed(gridSquare) {
             "6M", "4M", "2M", "1.25M", "70CM", "33CM", "23CM"
         ];
         const allBandsDisplay = allBands;
-        const allModes = ["FT4", "FT8", "SSB", "CW", "FM", "AM", "RTTY"];
+        const allModes = ["FT4", "FT8", "JT65", "SSB", "CW", "FM", "AM", "RTTY"];
         const minYear = 2015;
         const maxYear = new Date().getFullYear() + 1;
         const allYears = [];
@@ -312,64 +313,53 @@ function processConfirmedAdi(text) {
             return { lat, lng: lon };
         }
 
-        function addSquare(map, gridSquare, callsignYears, isConfirmed) {
-            let coords = gridToCoordinates(gridSquare);
-            let lat = coords.lat;
-            let lon = coords.lng;
-            let bounds = [
-                [lat, lon],
-                [lat + 1, lon + 2]
-            ];
-            let fillColor = isConfirmed ? "#00b300" : "#ff0000";
-            let rect = L.rectangle(bounds, {
-                color: fillColor,
-                weight: 1,
-                fillColor: fillColor,
-                fillOpacity: 0.25
-            }).addTo(map);
+function addSquare(map, gridSquare, callsignYears, isConfirmed) {
+    let coords = gridToCoordinates(gridSquare);
+    let lat = coords.lat;
+    let lon = coords.lng;
+    let bounds = [
+        [lat, lon],
+        [lat + 1, lon + 2]
+    ];
+    let fillColor = isConfirmed ? "#00b300" : "#ff0000";
+    let rect = L.rectangle(bounds, {
+        color: fillColor,
+        weight: 1,
+        fillColor: fillColor,
+        fillOpacity: 0.25
+    }).addTo(map);
 
-            gridRects[gridSquare] = rect; // Register the rectangle for later highlighting
+    gridRects[gridSquare] = rect; // Register the rectangle
 
-            let labelLat = lat + 0.5;
-            let labelLon = lon + 1;
-            let marker = L.marker([labelLat, labelLon], {
-                icon: L.divIcon({
-                    className: 'leaflet-label',
-                    html: gridSquare,
-                    iconSize: [40, 20],
-                    iconAnchor: [20, 10]
-                }),
-                interactive: true
-            }).addTo(map);
+    // Build grid tooltip
+    let tooltipContent = `<b>${gridSquare}</b>`;
+    if (isConfirmed) {
+        tooltipContent += `<br><span style="color:#00b300;font-weight:bold;">&#10003; Confirmed (LoTW)</span>`;
+    }
+    tooltipContent += `<br>Stations:<br>`;
+    let band = getSelectedBands()[0] || "";
+    let mode = getSelectedModes()[0] || "";
+    let calls = Object.keys(callsignYears);
+    if (calls.length > 0) {
+        tooltipContent += calls
+            .sort()
+            .map(call => {
+                let yearsArr = Array.from(callsignYears[call]).sort();
+                let yearList = yearsArr.map(year => {
+                    let key = `${gridSquare}:${band}:${mode}:${year}:${call}`;
+                    let isConfirmed = confirmedQsoSet.has(key);
+                    return isConfirmed ? `${year} ✔` : year;
+                }).join(', ');
+                return `${call} (${yearList})`;
+            })
+            .join('<br>');
+    } else {
+        tooltipContent += 'None';
+    }
 
-            let tooltipContent = `<b>${gridSquare}</b>`;
-            if (isConfirmed) {
-                tooltipContent += `<br><span style="color:#00b300;font-weight:bold;">&#10003; Confirmed (LoTW)</span>`;
-            }
-            tooltipContent += `<br>Stations:<br>`;
-            let band = getSelectedBands()[0] || "";
-let mode = getSelectedModes()[0] || "";
-let calls = Object.keys(callsignYears);
-if (calls.length > 0) {
-    tooltipContent += calls
-        .sort()
-        .map(call => {
-            let yearsArr = Array.from(callsignYears[call]).sort();
-            let yearList = yearsArr.map(year => {
-                let key = `${gridSquare}:${band}:${mode}:${year}:${call}`;
-                let isConfirmed = confirmedQsoSet.has(key);
-                return isConfirmed ? `${year} ✔` : year;
-            }).join(', ');
-            return `${call} (${yearList})`;
-        })
-        .join('<br>');
-} else {
-    tooltipContent += 'None';
-
-            }
-            rect.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
-            marker.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
-        }
+    // Attach tooltip only to rectangle
+    rect.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
+}
 
         function drawMap() {
             if (map !== null) map.remove();
@@ -378,6 +368,13 @@ if (calls.length > 0) {
                 maxZoom: 18,
                 attribution: '&copy; OpenStreetMap contributors'
             }).addTo(map);
+
+           L.maidenhead({
+               color: 'rgba(255, 0, 0, 0.6)',
+               precision: 6,
+               attribution: '&copy; HA8TKS https://github.com/ha8tks/Leaflet.Maidenhead'
+           }).addTo(map);
+
         }
 
         function generateBandCheckboxes(bandsFound) {
