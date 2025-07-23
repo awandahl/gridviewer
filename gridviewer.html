@@ -3,7 +3,7 @@
 <!--
 gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
 
-Ver. 0.8e
+Ver. 0.8f
 
 Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
 This software is released under the BSD 2-Clause License, as originally chosen by Jeffrey B. Otterson, N1KDO.
@@ -590,29 +590,77 @@ if (calls.length > 0) {
             updateMap();
         }
 
-        function boot() {
-            fetch('lotwreport.adi?nocache=' + new Date().getTime())
-                .then(r => r.text())
-                .then(function (txt) {
-                    txt = txt.toUpperCase(); // Normalize once here!
-                    processConfirmedAdi(txt);
-                    fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
-                        .then(r => r.text())
-                        .then(function (txt2) {
-                            txt2 = txt2.toUpperCase(); // Normalize once here!
-                            processAdiLines(txt2);
-                        });
-                });
-        }
-        boot();
-        setInterval(boot, 1800000);
+function boot() {
+    let lotwPromise = fetch('lotwreport.adi?nocache=' + new Date().getTime())
+        .then(r => r.ok ? r.text() : null)
+        .catch(() => null);
+
+    let wsjtxPromise = fetch('wsjtx_log.adi?nocache=' + new Date().getTime())
+        .then(r => r.ok ? r.text() : null)
+        .catch(() => null);
+
+    Promise.all([lotwPromise, wsjtxPromise])
+        .then(function ([lotwText, wsjtxText]) {
+            // Neither file loaded
+            if (!lotwText && !wsjtxText) {
+                document.getElementById("header").textContent = "No ADIF files found!";
+                document.getElementById("summary").textContent = "";
+                document.getElementById("legend").textContent = "";
+                drawMap(); // Show blank map background
+                return;
+            }
+
+            // Both files loaded: normal case
+            if (lotwText && wsjtxText) {
+                processConfirmedAdi(lotwText.toUpperCase());
+                processAdiLines(wsjtxText.toUpperCase());
+                return;
+            }
+
+            // Only wsjtx_log.adi present (worked only)
+            if (wsjtxText) {
+                confirmedGridBandModeYearSet.clear();
+                confirmedQsoSet.clear();
+                processAdiLines(wsjtxText.toUpperCase());
+                return;
+            }
+
+            // Only lotwreport.adi present (confirmed only, but also treat as worked for map/filter purposes)
+            if (lotwText) {
+                processConfirmedAdi(lotwText.toUpperCase());
+                // Reconstruct QSOs from confirmed log so the map/filter logic works without wsjtx_log.adi
+                let reconstructed = [];
+                let eoh = lotwText.indexOf("<EOH>");
+                let text = (eoh >= 0) ? lotwText.slice(eoh + 5) : lotwText;
+                const records = text.split(/<EOR>/i).map(r => r.trim()).filter(r => r.length > 0);
+                for (let block of records) {
+                    let qso = parse_adif_line(block);
+                    reconstructed.push(qso);
+                }
+                allQsos = reconstructed;
+                // Set up the filter checkboxes
+                let bandsFound = new Set(), modesFound = new Set(), yearsFound = new Set();
+                for (let qso of allQsos) {
+                    if (qso.BAND) bandsFound.add(qso.BAND);
+                    let stdMode = getStandardMode(qso);
+                    if (stdMode) modesFound.add(stdMode);
+                    let year = qso.QSO_DATE?.substr(0, 4);
+                    if (year) yearsFound.add(year);
+                }
+                generateBandCheckboxes(bandsFound);
+                generateModeCheckboxes(modesFound);
+                generateYearCheckboxes(yearsFound);
+                updateMap();
+                return;
+            }
+        });
+}
+boot();
+setInterval(boot, 1800000);
 
         document.getElementById('call-search').addEventListener('keyup', function (e) {
             if (e.key === 'Enter') doCallsignSearch();
         });
-//        document.getElementById('call-search').addEventListener('blur', function (e) {
-//            if (this.value.trim() !== "") doCallsignSearch();
-//        });
 
         function searchQsosByCallsign(callInput) {
             const search = callInput.trim().toUpperCase();
