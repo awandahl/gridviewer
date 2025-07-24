@@ -1,5 +1,8 @@
 <img src="https://github.com/user-attachments/assets/f8ae3ef3-b132-408a-bb29-794047affd9b" alt="gridviewer_screenshots" width="1000">
 
+![gt_0 8h_screeshot](https://github.com/user-attachments/assets/aec7ca60-bd83-4831-a32e-7a89412bebae)
+
+
 ## What GridViewer Can Do
 
 **GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. **GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (in my case) or Raspberry Pi. Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
