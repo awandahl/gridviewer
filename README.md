@@ -1,5 +1,3 @@
-<img src="https://github.com/user-attachments/assets/f8ae3ef3-b132-408a-bb29-794047affd9b" alt="gridviewer_screenshots" width="1000">
-
 ![gt_0 8h_screeshot](https://github.com/user-attachments/assets/aec7ca60-bd83-4831-a32e-7a89412bebae)
 
 
