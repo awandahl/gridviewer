@@ -3,7 +3,7 @@
 <!--
 gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
 
-Ver. 0.8g
+Ver. 0.8h
 
 Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
 This software is released under the BSD 2-Clause License, as originally chosen by Jeffrey B. Otterson, N1KDO.
@@ -210,7 +210,14 @@ Contributions:
     <div id="mode-filters"></div>
     <div id="year-filters"></div>
     <div id="map"></div>
-    <div id="footerLeft" class="footerLeft"></div>
+    <div id="footerLeft" class="footerLeft">
+        <div id="maidenhead-layer-toggle" style="display:inline-block; margin:0;">
+            <label>
+            <input type="checkbox" id="show-maidenhead" checked>
+            Show Maidenhead Grid
+        </label>
+        </div>
+    </div>
     <div id="footerMid" class="footerMid">
         <a href="https://github.com/awandahl/gridviewer">SM0HPL GitHub</a>
     </div>
@@ -235,6 +242,7 @@ let gridToCallsigns = {};
 let gridRects = {}; // To map gridSquare (e.g. 'JO65') to its Leaflet rectangle
 let highlightedGridSquare = null;
 let confirmedFilteredGrids = new Set();
+let maidenheadLayer = null;
 let map = null;
 
 function isGridConfirmed(gridSquare) {
@@ -361,21 +369,26 @@ function addSquare(map, gridSquare, callsignYears, isConfirmed) {
     rect.bindTooltip(tooltipContent, { sticky: true, direction: "top" });
 }
 
-        function drawMap() {
-            if (map !== null) map.remove();
-            map = L.map('map').setView([54.5, 15.5], 4);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
+function drawMap() {
+    if (map !== null) map.remove();
+    map = L.map('map').setView([54.5, 15.5], 4);
 
-           L.maidenhead({
-               color: 'rgba(255, 0, 0, 0.6)',
-               precision: 6,
-               attribution: '&copy; HA8TKS https://github.com/ha8tks/Leaflet.Maidenhead'
-           }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-        }
+    // Only add Maidenhead if the checkbox is checked
+    if (document.getElementById('show-maidenhead').checked) {
+        maidenheadLayer = L.maidenhead({
+            color: 'rgba(255, 0, 0, 0.6)',
+            precision: 6,
+            attribution: '&copy; HA8TKS https://github.com/ha8tks/Leaflet.Maidenhead'
+        }).addTo(map);
+    } else {
+        maidenheadLayer = null;
+    }
+}
 
         function generateBandCheckboxes(bandsFound) {
             const container = document.getElementById('band-filters');
@@ -586,6 +599,11 @@ function addSquare(map, gridSquare, callsignYears, isConfirmed) {
             generateYearCheckboxes(yearsFound);
             updateMap();
         }
+
+// Maidenhead or not
+document.getElementById('show-maidenhead').addEventListener('change', function () {
+    updateMap(); // Redraws map with/without Maidenhead grid
+});
 
 function boot() {
     let lotwPromise = fetch('lotwreport.adi?nocache=' + new Date().getTime())
