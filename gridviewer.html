@@ -3,7 +3,7 @@
 <!--
 gridviewer.html -- OpenStreetMap/Leaflet version with band/mode/year filter checkboxes and grid hover callsign/year popup.
 
-Ver. 0.8h
+Ver. 0.9a
 
 Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
 This software is released under the BSD 2-Clause License, as originally chosen by Jeffrey B. Otterson, N1KDO.
@@ -216,6 +216,10 @@ Contributions:
             <input type="checkbox" id="show-maidenhead" checked>
             Show Maidenhead Grid
         </label>
+            <label>
+      <input type="checkbox" id="toggle-maidenhead-color">
+      Color: Black
+    </label>
         </div>
     </div>
     <div id="footerMid" class="footerMid">
@@ -244,6 +248,7 @@ let highlightedGridSquare = null;
 let confirmedFilteredGrids = new Set();
 let maidenheadLayer = null;
 let map = null;
+let maidenheadGridColor = 'rgba(255, 0, 0, 0.6)'; // default red
 
 function isGridConfirmed(gridSquare) {
     return confirmedFilteredGrids && confirmedFilteredGrids.has(gridSquare);
@@ -381,7 +386,7 @@ function drawMap() {
     // Only add Maidenhead if the checkbox is checked
     if (document.getElementById('show-maidenhead').checked) {
         maidenheadLayer = L.maidenhead({
-            color: 'rgba(255, 0, 0, 0.6)',
+            color: maidenheadGridColor,
             precision: 6,
             attribution: '&copy; HA8TKS https://github.com/ha8tks/Leaflet.Maidenhead'
         }).addTo(map);
@@ -509,6 +514,14 @@ function drawMap() {
             let selectedModes = getSelectedModes();
             let selectedYears = getSelectedYears();
 
+let totalQsoCount = allQsos.filter(qso =>
+    selectedBands.includes(qso.BAND) &&
+    selectedModes.includes(getStandardMode(qso)) &&
+    selectedYears.includes(qso.QSO_DATE?.substr(0, 4)) &&
+    qso.GRIDSQUARE && qso.GRIDSQUARE.length >= 4 &&
+    qso.CALL
+).length;
+
             let grids = new Set();
             let gridToFilteredCallsigns = {};
             for (let qso of allQsos) {
@@ -558,7 +571,8 @@ function drawMap() {
 
             document.getElementById("header").innerHTML = `${grids.size} Grids Worked`;
             document.getElementById("summary").innerHTML =
-                `Confirmed: <b>${confirmedFilteredGrids.size}</b> / <b>${grids.size}</b> (${grids.size > 0 ? Math.round(confirmedFilteredGrids.size / grids.size * 100) : 0}%)`;
+                `Confirmed: <b>${confirmedFilteredGrids.size}</b> / <b>${grids.size}</b> (${grids.size > 0 ? Math.round(confirmedFilteredGrids.size / grids.size * 100) : 0}%)<br>` +
+                `Total number of QSO: <b>${totalQsoCount}</b>`;
 
             document.getElementById("legend").innerHTML = `
                 <span class="legend-gridcolor"></span>Worked
@@ -604,6 +618,17 @@ function drawMap() {
 document.getElementById('show-maidenhead').addEventListener('change', function () {
     updateMap(); // Redraws map with/without Maidenhead grid
 });
+
+// Black or red Maidenhead
+document.getElementById('toggle-maidenhead-color').addEventListener('change', function () {
+    if (this.checked) {
+        maidenheadGridColor = 'rgba(0, 0, 0, 0.6)'; // black
+    } else {
+        maidenheadGridColor = 'rgba(255, 0, 0, 0.6)'; // red
+    }
+    updateMap(); // Redraws with new color
+});
+
 
 function boot() {
     let lotwPromise = fetch('lotwreport.adi?nocache=' + new Date().getTime())
