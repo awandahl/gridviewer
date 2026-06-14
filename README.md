@@ -1,60 +1,99 @@
-![gt_0 8h_screeshot](https://github.com/user-attachments/assets/aec7ca60-bd83-4831-a32e-7a89412bebae)
+![GridViewer screenshot](https://github.com/user-attachments/assets/aec7ca60-bd83-4831-a32e-7a89412bebae)
 
+# GridViewer
 
-## What GridViewer Can Do
+GridViewer is a browser-based tool for displaying worked and confirmed Maidenhead grid squares from ADIF log files on an interactive map.
 
-**GridViewer** is an interactive and lightweight open source web-based tool designed for ham radio operators to visualize and analyze their worked grid squares from log files. **GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (in my case) or Raspberry Pi. Special thanks to Jeffrey B. Otterson, N1KDO, whose grid mapping logic and open-source code https://github.com/n1kdo/lotw-gridmapper provided crucial inspiration and a foundation for this tool.
+It uses OpenStreetMap and Leaflet for the map display. The grid mapping approach and parts of the original idea were inspired by Jeffrey B. Otterson, N1KDO, and his open-source project [lotw-gridmapper](https://github.com/n1kdo/lotw-gridmapper).
 
-[**Installation Instructions**](https://github.com/awandahl/gridviewer/blob/main/Installation.md)
+[Installation instructions](https://github.com/awandahl/gridviewer/blob/main/Installation.md)
 
-### Key Features
+## Functions
 
-#### 1. Interactive Grid Map
+- Displays worked grid squares on an interactive world map.
+- Uses `wsjtx_log.adi` as the source for worked QSOs.
+- Uses `lotwreport.adi` as the source for LoTW-confirmed QSOs.
+- Shows worked grids in red and confirmed grids in green.
+- Calculates and displays the number of worked grids, confirmed grids, confirmation percentage, and total QSO count for the current filter selection.
+- Filters results by band, mode, and year.
+- Provides "Select All" and "Reset" controls for band, mode, and year filters.
+- Shows station details for each grid square on hover.
+- Marks confirmed QSOs in the hover popup when they match the current band, mode, year, grid, and callsign combination.
+- Includes a callsign search field that searches within the currently selected filters.
+- Shows a result panel for callsign search with band, mode, date, grid, callsign, and LoTW status.
+- Moves the map to the first matching grid found by a callsign search and highlights that grid.
+- Supports optional display of the Maidenhead grid overlay.
+- Supports switching the Maidenhead overlay color between red and black.
+- Reloads the ADIF files automatically every 30 minutes.
+- Handles three operating cases: both ADIF files present, only `wsjtx_log.adi` present, or only `lotwreport.adi` present.
 
-- Displays all worked grid squares on an interactive map using OpenStreetMap and Leaflet.
-- Each grid square is highlighted so you can easily see your coverage.
+## Input files
 
+GridViewer looks for the following files in the same location as `gridviewer.html`:
 
-#### 2. Powerful Filtering
+- `wsjtx_log.adi` — worked QSOs.
+- `lotwreport.adi` — confirmed QSOs from LoTW.
 
-- **Band Filtering:** Instantly filter your contacts by amateur radio band (e.g., 6M, 2M, 20M, etc.) using intuitive checkboxes.
-- **Mode Filtering:** Select which transmission modes (e.g., FT8, SSB, CW) to display.
-- **Year Filtering:** Focus on contacts made in specific years, or view all years at once.
-- **Select All \& Reset:** Quickly select or reset all options in each filter category for fast exploration.
+If both files are present, the map shows both worked and confirmed status.
 
+If only `wsjtx_log.adi` is present, the map shows worked QSOs only.
 
-#### 3. Hover-Over Details
+If only `lotwreport.adi` is present, the file is used both as the confirmation source and as the data source for the map and filters.
 
-- Hover your mouse over any highlighted grid square to see a popup with:
-    - The callsigns you have worked in that square.
-    - The year(s) each callsign was worked (e.g., "SM0ABC (2024, 2025)").
+If neither file is present, GridViewer opens with an empty map and a message indicating that no ADIF files were found.
 
-#### 4. Real-Time Log Updates
+## Display and filtering
 
-- The tool automatically reloads your log file at regular intervals (default: every 30 minutes), so your map stays up to date as you make new QSOs.
+The interface contains three filter groups:
 
-#### 5. User-Friendly Interface
+- Band
+- Mode
+- Year
 
-- Clean, responsive design that works well on desktops, tablets, and mobile devices.
-- All controls are accessible and hopefully intuitive, with clear labels and logical grouping.
+The map, counts, tooltips, and callsign search results are updated from the current filter selection.
 
-## Why GridViewer Was Created
+The default selections in the current version are:
 
-**GridViewer** was developed to address a real-world challenge faced by many ham radio operators using lightweight or single-board computers like the Rock 4 SE (in my case) or Raspberry Pi:
+- Band: `6M`
+- Mode: `FT8`
+- Year: all years found in the log
 
-- **Resource Efficiency:** Popular programs like GridTracker, while feature-rich and beloved by many, are quite large (around 200MB) and can be resource-intensive. On low-power devices, running both WSJT-X and GridTracker simultaneously can overwhelm the system, resulting in sluggish performance or even making it impossible to operate both at once.
-- **Lightweight Alternative:** GridViewer was designed to be a minimal, efficient, browser-based solution for visualizing worked grid squares. It requires only a web browser, a small HTML file, and your log file—making it ideal for systems with limited CPU and memory.
-- **Practical Motivation:** The need for a tool that could run smoothly alongside WSJT-X on a device like the Rock 4 SE was the direct inspiration for GridViewer. By focusing on essential features and avoiding heavy dependencies, GridViewer enables real-time grid mapping without taxing the system.
+## Grid square details
 
+Hovering over a highlighted grid square shows:
 
-### Key Advantages of GridViewer
+- Grid identifier
+- Whether the grid is confirmed in LoTW for the current selection
+- Callsigns found in that grid
+- Year or years worked for each callsign
+- A check mark for years that correspond to a confirmed matching QSO
 
-- **Tiny Footprint:** Runs in any modern browser, no installation or large packages required.
-- **Low CPU Usage:** Minimal background processing, making it suitable for low-power hardware.
-- **Simple Setup:** Just serve the HTML file and your log—no complex configuration or dependencies.
-- **Responsive:** Allows you to run WSJT-X and GridViewer together even on modest hardware.
+## Callsign search
 
+The callsign search field is applied to the currently selected band, mode, and year filters.
 
-  Good luck!
-  Anders SM0HPL
+The result list shows:
 
+- Band
+- Mode
+- Date and time
+- Grid square
+- Callsign
+- LoTW confirmation status
+
+When one or more matches are found, the map centers on the first matching grid and highlights it.
+
+## Purpose
+
+GridViewer was written as a lightweight alternative for viewing worked grids from ADIF files in a web browser, including on lower-power systems.
+
+It does not depend on a separate application framework. In normal use it only requires the HTML file, the ADIF file or files, and a web server or other local method for serving the files to a browser.
+
+## Notes
+
+- The map uses OpenStreetMap tiles and Leaflet.
+- The Maidenhead overlay uses the Leaflet.Maidenhead plugin by HA8TKS.
+- ADIF parsing is done in the browser.
+- The current implementation standardizes `FT4` and `FT8` from `SUBMODE` where applicable.
+
+Anders Wändahl, SM0HPL
