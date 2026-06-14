@@ -37,7 +37,6 @@ So don't try to call it on my server, it won't work.
 import argparse
 import os
 import urllib.error
-import urllib.parse
 import urllib.request
 import sys
 import traceback
@@ -79,16 +78,15 @@ def get_request():
 
 
 def call_lotw(params):
-    callsign = urllib.parse.quote(params.get('login'))
-    password = urllib.parse.quote(params.get('password'))
-    client = urllib.parse.quote(params.get('client'))
+    callsign = params.get('login')
+    password = params.get('password')
+    client = params.get('client')
 
     pfx = '?'
     url = 'https://lotw.arrl.org/lotwuser/lotwreport.adi'
     for key in params.keys():
         if key in valid_args:
-            val = urllib.parse.quote(params.get(key))
-            url = url + pfx + key + '=' + val
+            url = url + pfx + key + '=' + params.get(key)
             pfx = '&'
 
     if password is None and client.startswith('192.168.1'):  # debugging hack for front end.
