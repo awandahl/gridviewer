@@ -4,8 +4,7 @@
 
 GridViewer is a browser-based tool for displaying worked and confirmed Maidenhead grid squares from ADIF log files on an interactive map.
 
-It uses OpenStreetMap and Leaflet for the map display. The grid mapping approach and parts of the original idea were inspired by Jeffrey B. Otterson, N1KDO, and his open-source project [lotw-gridmapper](https://github.com/n1kdo/lotw-gridmapper).
-His `lotwreport.py` file is used as is for for fetching data from the ARRL LoTW lotwreport.adi web service.
+It uses OpenStreetMap and Leaflet for the map display. The grid mapping approach and parts of the original idea were inspired by Jeffrey B. Otterson, N1KDO, and his open-source project [lotw-gridmapper](https://github.com/n1kdo/lotw-gridmapper). His `lotwreport.py` file is used as is for for fetching data from the ARRL LoTW lotwreport.adi web service.
 
 [Installation instructions](https://github.com/awandahl/gridviewer/blob/main/Installation.md)
 
@@ -17,7 +16,7 @@ His `lotwreport.py` file is used as is for for fetching data from the ARRL LoTW 
 - Shows worked grids in red and confirmed grids in green.
 - Calculates and displays the number of worked grids, confirmed grids, confirmation percentage, and total QSO count for the current filter selection.
 - Filters results by band, mode, and year.
-- Provides "Select All" and "Reset" controls for band, mode, and year filters.
+- Provides `Select All` and `Reset` controls for band, mode, and year filters.
 - Shows station details for each grid square on hover.
 - Marks confirmed QSOs in the hover popup when they match the current band, mode, year, grid, and callsign combination.
 - Includes a callsign search field that searches within the currently selected filters.
@@ -32,8 +31,8 @@ His `lotwreport.py` file is used as is for for fetching data from the ARRL LoTW 
 
 GridViewer looks for the following files in the same location as `gridviewer.html`:
 
-- `wsjtx_log.adi` — worked QSOs.
-- `lotwreport.adi` — confirmed QSOs from LoTW.
+- `wsjtx_log.adi` — worked QSOs
+- `lotwreport.adi` — confirmed QSOs from LoTW
 
 If both files are present, the map shows both worked and confirmed status.
 
@@ -83,6 +82,48 @@ The result list shows:
 - LoTW confirmation status
 
 When one or more matches are found, the map centers on the first matching grid and highlights it.
+
+## Example LoTW update script
+
+One way to create `lotwreport.adi` is to run a wrapper shell script that calls `lotwreport.py` and writes the output directly to the file used by GridViewer.
+
+Example:
+
+```bash
+#!/bin/bash
+python3 lotwreport.py \
+  --login sm0hpl \
+  --password '*******' \
+  --qso_qsl yes \
+  --qso_owncall sm0hpl \
+  --qso_startdate 2015-01-01 \
+  --qso_enddate 2999-12-31 \
+  --qso_band 6M \
+  --qso_qsldetail yes > lotwreport.adi
+```
+
+This example is limited to `6M`, because that is the band currently of interest in this setup. The same method can be used with different bands or date ranges.
+
+The script writes the returned LoTW ADIF data to `lotwreport.adi`, replacing the previous file.
+
+## Example cron job
+
+The shell script above can be started from `cron` every 30 minutes.
+
+Example crontab entry:
+
+```cron
+*/30 * * * * flock -n /tmp/lotwreport.lock /home/aw/hamradio/install/gridviewer/run_lotwreport.sh >> /home/aw/hamradio/install/gridviewer/lotwreport_cron.log 2>&1
+```
+
+This does the following:
+
+- `*/30 * * * *` runs the job every 30 minutes
+- `flock -n /tmp/lotwreport.lock` prevents overlapping runs by using a lock file and exiting immediately if a previous run is still active
+- `/home/aw/hamradio/install/gridviewer/run_lotwreport.sh` runs the update script
+- `>> /home/aw/hamradio/install/gridviewer/lotwreport_cron.log 2>&1` appends both normal output and error output to a log file for later inspection
+
+This is only one example of how `lotwreport.adi` can be maintained. GridViewer itself only requires that the file exists and is refreshed by some external method.
 
 ## Purpose
 
