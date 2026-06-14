@@ -3,6 +3,7 @@
 # GridViewer
 
 GridViewer is a browser-based tool for displaying worked and confirmed Maidenhead grid squares from ADIF log files on an interactive map. My live instance, running on a Rock 4 SE, is sometimes available at http://sm0hpl.tplinkdns.com:8000/   
+
 It uses OpenStreetMap and Leaflet for the map display. The grid mapping approach and parts of the original idea were inspired by Jeffrey B. Otterson, N1KDO, and his open-source project [lotw-gridmapper](https://github.com/n1kdo/lotw-gridmapper). His `lotwreport.py` file is used as is for for fetching data from the ARRL LoTW lotwreport.adi web service.
 
 [Installation instructions](https://github.com/awandahl/gridviewer/blob/main/Installation.md)
