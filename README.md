@@ -1,4 +1,4 @@
-![GridViewer Screenshot](https://github.com/awandahl/gridviewer/blob/main/gridviewer.png)
+![GridViewer Screenshot](https://github.com/awandahl/gridviewer/blob/main/screen_shot.png)
 
 # GridViewer
 
